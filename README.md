@@ -50,3 +50,11 @@ pip install uvicorn
 ```
 uvicorn test:app --reload
 ```
+
+http://127.0.0.1:8000 브라우저에서 입력.
+
+![image](https://github.com/user-attachments/assets/d7337fb7-3d2a-4313-ac84-4e0cb355c697)
+
+실행 성공!
+
+http://127.0.0.1:8000/docs에서 API 문서 확인 가능
