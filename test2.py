@@ -13,14 +13,14 @@ import os
 
 app = FastAPI()
 
-# ✅ ComfyUI 주소 (로컬이 아닌 외부 URL 사용 시 변경)
-COMFYUI_URL = "https://midnight-cloud-carried-delayed.trycloudflare.com"
+# ComfyUI 주소 (로컬이 아닌 외부 URL 사용 시 변경)
+COMFYUI_URL = "https://environment-direct-cuba-lawyer.trycloudflare.com"
 WORKFLOW_PATH = "finish.json"
 
 class PromptRequest(BaseModel):
     prompt: str
 
-@app.post("/generate")
+@app.post("/image")
 async def generate_image(data: PromptRequest):
     try:
         if not os.path.exists(WORKFLOW_PATH):
@@ -35,7 +35,7 @@ async def generate_image(data: PromptRequest):
                 if node["inputs"].get("clip") == ["4", 1]:
                     node["inputs"]["text"] = data.prompt
 
-        # ✅ SaveImage 노드 추가
+        # SaveImage 노드 추가
         new_node_id = max(map(int, raw_workflow.keys())) + 1
         raw_workflow[str(new_node_id)] = {
             "class_type": "SaveImage",

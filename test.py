@@ -14,13 +14,13 @@ import os
 app = FastAPI()
 
 #코랩에서 사용한 comfyui는 cloudflare을 사용했기 때문에 url이 항상 변합니다. 이를 고려하여 url을 변경해줘야 합니다.
-COMFYUI_URL = "https://receipt-compute-carb-beatles.trycloudflare.com"
+COMFYUI_URL = "https://environment-direct-cuba-lawyer.trycloudflare.com"
 WORKFLOW_PATH = "test.json"
 
 class PromptRequest(BaseModel):
-    prompt: str
+    prompt: str 
 
-@app.post("/generate")
+@app.post("/image")
 async def generate_image(data: PromptRequest):
     try:
         if not os.path.exists(WORKFLOW_PATH):
