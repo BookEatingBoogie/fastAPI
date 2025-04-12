@@ -31,7 +31,8 @@
   },
   "4": {
     "inputs": {
-      "ckpt_name": "toonyou_beta6.safetensors"
+      "ckpt_name": "toonyou_beta6.safetensors",
+      "load_on_start": false
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {

@@ -14,7 +14,7 @@ import os
 app = FastAPI()
 
 # ComfyUI 주소 (로컬이 아닌 외부 URL 사용 시 변경)
-COMFYUI_URL = "https://environment-direct-cuba-lawyer.trycloudflare.com"
+COMFYUI_URL = "https://separated-chad-captured-consultants.trycloudflare.com"
 WORKFLOW_PATH = "character.json"
 
 class PromptRequest(BaseModel):
