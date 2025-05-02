@@ -2,22 +2,23 @@ import os
 import json
 import requests
 import asyncio
-from fastapi import APIRouter, HTTPException
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+app = FastAPI()
 
-#  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://plates-hs-gs-compared.trycloudflare.com"
-WORKFLOW_PATH = "illust.json"
+# ComfyUI 관련 설정
+COMFYUI_URL = "https://blowing-convinced-confused-opening.trycloudflare.com"
+WORKFLOW_PATH = "character.json"
 BASE_IMAGE_NAME = "hello.jpeg"
 current_index = -1
 
-#  요청 데이터 모델 정의
+# 요청 데이터 모델 정의
 class PromptRequest(BaseModel):
     prompt: str
 
-#  이미지 파일 이름 생성 함수
-def get_next_image_name():
+# 이미지 파일 이름 자동 증가 함수
+def get_next_character_name():
     global current_index
     current_index += 1
     if current_index == 0:
@@ -25,59 +26,71 @@ def get_next_image_name():
     name, ext = os.path.splitext(BASE_IMAGE_NAME)
     return f"{name} ({current_index}){ext}"
 
-#  이미지 생성 함수(비동기)
-async def generate_image_from_prompt(prompt: str):
+# 실제 이미지 생성 함수
+async def generate_character_from_prompt(prompt: str):
     try:
-        # 새 이미지 이름 생성
-        next_image_name = get_next_image_name()
-        
-        #워크플로우 파일 로드 및 예외처리
+        next_image_name = get_next_character_name()
+
         if not os.path.exists(WORKFLOW_PATH):
-            raise HTTPException(status_code=404, detail="illust.json 파일이 없습니다.")
+            raise HTTPException(status_code=404, detail="워크플로우 파일이 없습니다.")
+
         with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
             raw_workflow = json.load(f)
 
-        # 워크플로우 내 텍스트 및 이미지 입력 값 수정
+        # SaveImage 노드에 filename_prefix 추가 (없을 경우)
+        for node_id, node in raw_workflow.items():
+            if isinstance(node, dict) and node.get("class_type") == "SaveImage":
+                if "filename_prefix" not in node.get("inputs", {}):
+                    node["inputs"]["filename_prefix"] = "output"
+
+        # Prompt 및 이미지 적용
         for node in raw_workflow.values():
+            if not isinstance(node, dict):
+                continue
+
             if node.get("class_type") == "CLIPTextEncode":
                 node["inputs"]["text"] = prompt
-            elif node.get("class_type") == "LoadImage":
-                node["inputs"]["image"] = next_image_name
 
-        # ComfyUI에 프롬프트 전달 (POST 요청)
+            elif node.get("class_type") == "LoadImage":
+                original_image = node["inputs"].get("image", "")
+                # pose 관련 이미지는 유지
+                if original_image != "posefinish.png":
+                    node["inputs"]["image"] = next_image_name
+
+        # 프롬프트 전송
         res = requests.post(f"{COMFYUI_URL}/prompt", json={"prompt": raw_workflow})
         res.raise_for_status()
-        # prompt_id는 생성된 작업 ID
         prompt_id = res.json()["prompt_id"]
 
-        # ComfyUI에서 결과를 가져오기 위한 대기(비동기로 최대 30초간 결과 polling함)
+        # 결과 polling
+        outputs = {}
         for _ in range(30):
             result = requests.get(f"{COMFYUI_URL}/history/{prompt_id}")
             result.raise_for_status()
             result_json = result.json()
             outputs = result_json.get(prompt_id, {}).get("outputs", {}) or result_json.get("outputs", {})
-            if outputs: 
+            if outputs:
                 break
             await asyncio.sleep(1)
 
-        # 결과가 비어 있으면 예외 발생
         if not outputs:
             raise Exception("출력 결과가 비어 있습니다.")
-        
-        # 첫 번째 출력 이미지 정보 추출
+
         first_output = list(outputs.values())[0]
         image_filename = first_output["images"][0]["filename"]
         image_url = f"{COMFYUI_URL}/view?filename={image_filename}&type=output"
 
-        # 최종 결과 반환(필요 없으면 지워도 됨)
         return {
             "status": "success",
             "prompt": prompt,
             "image_url": image_url,
             "used_image_name": next_image_name
         }
-    
-    # 예외 발생 시 HTTPException 반환
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# FastAPI 라우터
+@app.post("/image")
+async def generate_image(data: PromptRequest):
+    return await generate_character_from_prompt(data.prompt)

@@ -11,3 +11,7 @@ def formatStory(text):
     for i,s in enumerate(text):
         numberedList.append(f"{i+1}. {s}")
     return "\n\n".join(numberedList)
+
+def formatPrompt(text):
+    formatedPrompt = f'{{"prompt": "{text}"}}'
+    return formatedPrompt

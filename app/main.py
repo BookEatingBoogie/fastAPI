@@ -3,12 +3,18 @@ from app.service.gptService import *
 from app.schemas.gptPrompt import gptPrompt
 from app.schemas.storyStyle import storyStyle
 from app.service.storyFormating import splitParagraphs
+from app.service.storyFormating import formatPrompt
+from stablediffusion.image_uploader import save_and_upload_image
+from stablediffusion.illust_success import *
+from stablediffusion.character_success import *
+
 
 # 캐릭터 및 스토리 질문 횟수
 characterQuestionNum = 8
 storyQuestionNum = 8
 
 app = FastAPI()
+
 
 # 실제 횟수 차감하는 변수
 questionNum = characterQuestionNum
@@ -22,20 +28,38 @@ async def generateCharacter(prompt: gptPrompt):
     global questionNum
     global characterInfo
 
-    questionNum-=1
+    #questionNum-=1
     print(questionNum)
 
     # 캐릭터 생성 질문 리턴
     genQuestion = callGPT_character(prompt.userContent)
 
     # 질문 횟수가 0번 남으면(=질문이 끝나면) json 형식으로 정리.
-    if questionNum == 0:
+    if questionNum == 8:
         questionNum = characterQuestionNum
         characterInfo = getCharacterJson()
         print(characterInfo)
-        return createCharacter(characterInfo)
+        
+        formatted_info = formatPrompt(characterInfo)
+        
+        english_prompt = createCharacter(formatted_info)
+
+        result = await generate_character_from_prompt(english_prompt)
+        
+        
+        image_url = result["image_url"]
+        filename = result["used_image_name"]
+        s3_url = save_and_upload_image(
+            image_url=image_url,
+            local_filename=filename,
+            bucket_name="bookeating", 
+            s3_key=f"storybook/{filename}"
+        )
+
+        return {"status": "success", "s3_url": s3_url}
     
     return genQuestion
+
 
 @app.post("/generate/story/")
 async def generateStory(storyStyle: storyStyle):
