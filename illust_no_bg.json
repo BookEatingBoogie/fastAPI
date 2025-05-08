@@ -41,8 +41,8 @@
   },
   "5": {
     "inputs": {
-      "width": 512,
-      "height": 512,
+      "width": 768,
+      "height": 768,
       "batch_size": 1
     },
     "class_type": "EmptyLatentImage",
@@ -92,11 +92,29 @@
       "title": "VAE 디코드"
     }
   },
+  "40": {
+    "inputs": {
+      "image": ["8", 0],
+      "model": "RMBG-2.0",
+      "sensitivity": 1.0,
+      "process_res": 1024,
+      "mask_blur": 0,
+      "mask_offset": 0,
+      "background": "Alpha",
+      "invert_output": false,
+      "optimization": "default",
+      "clean_foreground": false
+    },
+    "class_type": "RMBG",
+    "_meta": {
+      "title": "배경 제거 (RMBG)"
+    }
+},
   "9": {
     "inputs": {
       "filename_prefix": "IPAdapter",
       "images": [
-        "8",
+        "40",
         0
       ]
     },

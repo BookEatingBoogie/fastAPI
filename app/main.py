@@ -44,7 +44,7 @@ async def generateCharacter(prompt: gptPrompt):
         
         english_prompt = createCharacter(formatted_info)
 
-        result = await generate_character_from_prompt(english_prompt)
+        result = await generate_image_from_prompt(english_prompt)
         
         
         image_url = result["image_url"]

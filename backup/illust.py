@@ -36,7 +36,7 @@ async def generate_image(data: PromptRequest):
                     node["inputs"]["text"] = data.prompt
 
         payload = {"prompt": raw_workflow}
-        print("🔥 ComfyUI로 보낼 JSON 구조:")
+        print(" ComfyUI로 보낼 JSON 구조:")
         print(json.dumps(payload, indent=2))
 
         # 프롬프트 전송 코드

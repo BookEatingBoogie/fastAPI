@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://plates-hs-gs-compared.trycloudflare.com"
+COMFYUI_URL = "https://taiwan-hearing-beatles-wichita.trycloudflare.com"
 WORKFLOW_PATH = "illust.json"
 BASE_IMAGE_NAME = "hello.jpeg"
 current_index = -1

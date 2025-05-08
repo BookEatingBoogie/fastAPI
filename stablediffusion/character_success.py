@@ -2,22 +2,15 @@ import os
 import json
 import requests
 import asyncio
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import HTTPException
 
-app = FastAPI()
-
-# ComfyUI 관련 설정
-COMFYUI_URL = "https://blowing-convinced-confused-opening.trycloudflare.com"
+# 설정값
+COMFYUI_URL = "https://taiwan-hearing-beatles-wichita.trycloudflare.com"
 WORKFLOW_PATH = "character.json"
 BASE_IMAGE_NAME = "hello.jpeg"
 current_index = -1
 
-# 요청 데이터 모델 정의
-class PromptRequest(BaseModel):
-    prompt: str
-
-# 이미지 파일 이름 자동 증가 함수
+# 이미지 파일 이름 자동 증가
 def get_next_character_name():
     global current_index
     current_index += 1
@@ -26,60 +19,73 @@ def get_next_character_name():
     name, ext = os.path.splitext(BASE_IMAGE_NAME)
     return f"{name} ({current_index}){ext}"
 
-# 실제 이미지 생성 함수
+# 캐릭터 이미지 생성 함수
 async def generate_character_from_prompt(prompt: str):
     try:
         next_image_name = get_next_character_name()
 
+        # 워크플로우 파일 확인
         if not os.path.exists(WORKFLOW_PATH):
-            raise HTTPException(status_code=404, detail="워크플로우 파일이 없습니다.")
+            raise HTTPException(status_code=404, detail="character.json 워크플로우 파일이 없습니다.")
 
+        # 워크플로우 로딩 및 수정
         with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
             raw_workflow = json.load(f)
 
-        # SaveImage 노드에 filename_prefix 추가 (없을 경우)
-        for node_id, node in raw_workflow.items():
-            if isinstance(node, dict) and node.get("class_type") == "SaveImage":
-                if "filename_prefix" not in node.get("inputs", {}):
-                    node["inputs"]["filename_prefix"] = "output"
-
-        # Prompt 및 이미지 적용
         for node in raw_workflow.values():
             if not isinstance(node, dict):
                 continue
 
+            # 프롬프트 삽입
             if node.get("class_type") == "CLIPTextEncode":
                 node["inputs"]["text"] = prompt
 
+            # 이미지 파일명 교체 (pose 관련 이미지는 유지)
             elif node.get("class_type") == "LoadImage":
-                original_image = node["inputs"].get("image", "")
-                # pose 관련 이미지는 유지
-                if original_image != "posefinish.png":
+                if node["inputs"].get("image") != "posefinish.png":
                     node["inputs"]["image"] = next_image_name
 
-        # 프롬프트 전송
+            # 저장 노드 설정
+            elif node.get("class_type") == "SaveImage":
+                node["inputs"].setdefault("filename_prefix", "output")
+
+        # ComfyUI에 프롬프트 전송
         res = requests.post(f"{COMFYUI_URL}/prompt", json={"prompt": raw_workflow})
         res.raise_for_status()
         prompt_id = res.json()["prompt_id"]
 
-        # 결과 polling
+        # Polling: 이미지 생성 기다리기 (최대 60초)
         outputs = {}
-        for _ in range(30):
+        for _ in range(60):
             result = requests.get(f"{COMFYUI_URL}/history/{prompt_id}")
             result.raise_for_status()
             result_json = result.json()
-            outputs = result_json.get(prompt_id, {}).get("outputs", {}) or result_json.get("outputs", {})
+
+            outputs = result_json.get(prompt_id, {}).get("outputs", {})
             if outputs:
-                break
+                found = any("images" in node and node["images"] for node in outputs.values())
+                if found:
+                    break
+
             await asyncio.sleep(1)
 
         if not outputs:
-            raise Exception("출력 결과가 비어 있습니다.")
+            raise HTTPException(status_code=500, detail="출력 결과가 비어 있습니다.")
 
-        first_output = list(outputs.values())[0]
-        image_filename = first_output["images"][0]["filename"]
+        # 이미지 포함 노드에서 filename 추출
+        image_filename = None
+        for node in outputs.values():
+            if isinstance(node, dict) and "images" in node and node["images"]:
+                image_filename = node["images"][0]["filename"]
+                break
+
+        if not image_filename:
+            raise HTTPException(status_code=500, detail="'images' 키가 있는 노드를 찾을 수 없습니다.")
+
+        # 이미지 URL 생성
         image_url = f"{COMFYUI_URL}/view?filename={image_filename}&type=output"
 
+        # 결과 반환
         return {
             "status": "success",
             "prompt": prompt,
@@ -88,9 +94,4 @@ async def generate_character_from_prompt(prompt: str):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# FastAPI 라우터
-@app.post("/image")
-async def generate_image(data: PromptRequest):
-    return await generate_character_from_prompt(data.prompt)
+        raise HTTPException(status_code=500, detail=f"오류 발생: {str(e)}")

@@ -157,18 +157,36 @@
       "title": "OpenPose Pose"
     }
   },
-  "24": {
+  "40": {
     "inputs": {
-      "images": [
-        "8",
-        0
-      ]
+      "image": ["8", 0],
+      "model": "RMBG-2.0",
+      "sensitivity": 1.0,
+      "process_res": 1024,
+      "mask_blur": 0,
+      "mask_offset": 0,
+      "background": "Alpha",
+      "invert_output": false,
+      "optimization": "default",
+      "clean_foreground": false
     },
-    "class_type": "SaveImage",
+    "class_type": "RMBG",
     "_meta": {
-      "title": "이미지 저장"
+      "title": "배경 제거 (RMBG)"
     }
+},
+  "24": {
+  "inputs": {
+    "images": [
+      "40",
+      0
+    ]
   },
+  "class_type": "SaveImage",
+  "_meta": {
+    "title": "이미지 저장"
+  }
+},
   "30": {
     "inputs": {
       "preset": "FACEID PLUS V2",
