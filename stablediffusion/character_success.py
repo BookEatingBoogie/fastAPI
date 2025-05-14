@@ -4,33 +4,36 @@ import requests
 import asyncio
 from fastapi import HTTPException
 
+from stablediffusion.image_uploader import download_image_from_s3
+
 # 설정값
-COMFYUI_URL = "https://taiwan-hearing-beatles-wichita.trycloudflare.com"
+COMFYUI_URL = "https://choices-translation-recovered-obtained.trycloudflare.com"
 WORKFLOW_PATH = "character.json"
-BASE_IMAGE_NAME = "hello.jpeg"
 current_index = -1
 
 # 이미지 파일 이름 자동 증가
-def get_next_character_name():
-    global current_index
-    current_index += 1
-    if current_index == 0:
-        return BASE_IMAGE_NAME
-    name, ext = os.path.splitext(BASE_IMAGE_NAME)
-    return f"{name} ({current_index}){ext}"
+call_count = 0
+current_index = 0
 
-# 캐릭터 이미지 생성 함수
-async def generate_character_from_prompt(prompt: str):
-    try:
-        next_image_name = get_next_character_name()
 
-        # 워크플로우 파일 확인
+# 캐릭터 이미지 생성 함call_count = 0
+current_index = 0
+
+def get_workflow():
+    # 워크플로우 파일 확인
         if not os.path.exists(WORKFLOW_PATH):
             raise HTTPException(status_code=404, detail="character.json 워크플로우 파일이 없습니다.")
-
         # 워크플로우 로딩 및 수정
         with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
-            raw_workflow = json.load(f)
+            return json.load(f)
+
+workflow = get_workflow()
+
+async def generate_character_from_prompt(file_name: str, prompt: str):
+    print(file_name)
+    try:
+        global workflow
+        raw_workflow = workflow
 
         for node in raw_workflow.values():
             if not isinstance(node, dict):
@@ -43,7 +46,7 @@ async def generate_character_from_prompt(prompt: str):
             # 이미지 파일명 교체 (pose 관련 이미지는 유지)
             elif node.get("class_type") == "LoadImage":
                 if node["inputs"].get("image") != "posefinish.png":
-                    node["inputs"]["image"] = next_image_name
+                    node["inputs"]["image"] = file_name
 
             # 저장 노드 설정
             elif node.get("class_type") == "SaveImage":
@@ -54,7 +57,7 @@ async def generate_character_from_prompt(prompt: str):
         res.raise_for_status()
         prompt_id = res.json()["prompt_id"]
 
-        # Polling: 이미지 생성 기다리기 (최대 60초)
+        # Polling: 이미지 생성 기다리기 (최대 60초) ---> 이유가?
         outputs = {}
         for _ in range(60):
             result = requests.get(f"{COMFYUI_URL}/history/{prompt_id}")
@@ -90,7 +93,7 @@ async def generate_character_from_prompt(prompt: str):
             "status": "success",
             "prompt": prompt,
             "image_url": image_url,
-            "used_image_name": next_image_name
+            "used_image_name": file_name
         }
 
     except Exception as e:

@@ -4,4 +4,4 @@ class introOutput(BaseModel):
     intro: str
     question: str
     options: list[str]
-    outfit: str
+    charLook: str

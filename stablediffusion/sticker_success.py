@@ -7,8 +7,8 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://parameters-auctions-strips-verde.trycloudflare.com"
-WORKFLOW_PATH = "illust.json"
+COMFYUI_URL = "https://alternatively-knows-overview-textiles.trycloudflare.com"
+WORKFLOW_PATH = "illust_no_bg.json"
 BASE_IMAGE_NAME = "img3.jpeg"
 current_index = -1
 
@@ -20,17 +20,8 @@ class PromptRequest(BaseModel):
 call_count = 0
 current_index = 0
 
-def get_workflow():
-    #워크플로우 파일 로드 및 예외처리
-    if not os.path.exists(WORKFLOW_PATH):
-        raise HTTPException(status_code=404, detail="illust.json 파일이 없습니다.")
-    with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
-        raw_workflow = json.load(f)
-
 def get_next_image_name():
     global call_count, current_index
-
-    print(f"call_count: {call_count}, current_index: {current_index}")
     call_count += 1
 
     # 5번 호출될 때마다 인덱스 1 증가
@@ -45,13 +36,16 @@ def get_next_image_name():
         return f"{name} ({current_index}){ext}"
 
 #  이미지 생성 함수(비동기)
-async def generate_image_from_prompt(prompt: str):
+async def generate_sticker_from_prompt(prompt: str):
     try:
-        # 워크플로우 파일 로드
-        raw_workflow = get_workflow()
-
         # 새 이미지 이름 생성
         next_image_name = get_next_image_name()
+        
+        #워크플로우 파일 로드 및 예외처리
+        if not os.path.exists(WORKFLOW_PATH):
+            raise HTTPException(status_code=404, detail="illust.json 파일이 없습니다.")
+        with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
+            raw_workflow = json.load(f)
 
         # 워크플로우 내 텍스트 및 이미지 입력 값 수정
         for node in raw_workflow.values():

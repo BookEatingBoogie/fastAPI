@@ -1,7 +1,12 @@
+import io
 import os
+from typing_extensions import Buffer
 import requests
 import boto3
 from botocore.exceptions import NoCredentialsError
+
+# S3 클라이언트 생성
+s3 = boto3.client("s3", region_name="ap-northeast-2") 
 
 # 이미지 다운로드 함수
 def download_image_from_url(image_url: str, save_path: str):
@@ -38,3 +43,23 @@ def save_and_upload_image(image_url: str, local_filename: str, bucket_name: str,
     if download_image_from_url(image_url, save_path): # 이미지 다운로드 성공
         return upload_file_to_s3(save_path, bucket_name, s3_key) # S3 업로드 성공
     return None
+
+def download_image_from_s3(s3_url: str):
+    try:
+        # S3 URL 파싱
+        s3_parts = s3_url.split("/")
+        bucket_name = "bookeating"
+        s3_key = "/".join(s3_parts[3:])
+        file_name = "/".join(s3_parts[4:])
+        print(file_name)
+
+        # 메모리 버퍼에 S3 객체 다운로드
+        buffer = io.BytesIO()
+        s3.download_fileobj(bucket_name, s3_key, buffer)
+        buffer.seek(0)
+
+        return buffer, file_name
+    except Exception as e:
+        print(f"[ERROR] S3 이미지 다운로드 실패: {e}")
+        return None
+
