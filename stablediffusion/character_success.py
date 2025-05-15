@@ -5,21 +5,49 @@ import asyncio
 from fastapi import HTTPException
 
 # 설정값
-COMFYUI_URL = "https://taiwan-hearing-beatles-wichita.trycloudflare.com"
+COMFYUI_URL = "https://gates-condition-brief-against.trycloudflare.com"
 WORKFLOW_PATH = "character.json"
 BASE_IMAGE_NAME = "hello.jpeg"
 current_index = -1
 
 # 이미지 파일 이름 자동 증가
-def get_next_character_name():
-    global current_index
-    current_index += 1
+call_count = 0
+current_index = 0
+
+def get_next_image_name():
+    global call_count, current_index
+    call_count += 1
+
+    # 5번 호출될 때마다 인덱스 1 증가
+    if call_count > 5:
+        call_count = 1
+        current_index += 1
+
     if current_index == 0:
         return BASE_IMAGE_NAME
-    name, ext = os.path.splitext(BASE_IMAGE_NAME)
-    return f"{name} ({current_index}){ext}"
+    else:
+        name, ext = os.path.splitext(BASE_IMAGE_NAME)
+        return f"{name} ({current_index}){ext}"
 
-# 캐릭터 이미지 생성 함수
+
+# 캐릭터 이미지 생성 함call_count = 0
+current_index = 0
+
+def get_next_image_name():
+    global call_count, current_index
+    call_count += 1
+
+    # 5번 호출될 때마다 인덱스 1 증가
+    if call_count > 5:
+        call_count = 1
+        current_index += 1
+
+    if current_index == 0:
+        return BASE_IMAGE_NAME
+    else:
+        name, ext = os.path.splitext(BASE_IMAGE_NAME)
+        return f"{name} ({current_index}){ext}"
+    
 async def generate_character_from_prompt(prompt: str):
     try:
         next_image_name = get_next_character_name()

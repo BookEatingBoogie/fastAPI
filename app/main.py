@@ -11,6 +11,7 @@ from app.service.storyFormating import formatPrompt
 from stablediffusion.image_uploader import save_and_upload_image
 from stablediffusion.illust_success import *
 from stablediffusion.character_success import *
+from stablediffusion.onlybackground import *
 
 
 # 캐릭터 및 스토리 질문 횟수
@@ -58,7 +59,7 @@ async def generateIllust(scene: str):
     try:
         imgPrompt = createStoryImage(scene)
 
-        result = await generate_image_from_prompt(imgPrompt)
+        result = await generate_background_from_prompt(imgPrompt)
 
         image_url = result["image_url"]
         filename = result["used_image_name"]
@@ -91,9 +92,29 @@ async def getIntro(introRequest: introRequest):
         intro = generateIntro(introRequest)
 
         # 스토리 저장
-        story.append(intro["intro"])
-    
-        return intro
+        story.append(intro.intro)
+        
+
+        scene = intro.intro
+
+        imgPrompt = createStoryImage(scene)
+        result = await generate_image_from_prompt(imgPrompt)
+        image_url = result["image_url"]
+        filename = result["used_image_name"]
+        s3_url = save_and_upload_image(
+            image_url=image_url,
+            local_filename=filename,
+            bucket_name="bookeating", 
+            s3_key=f"storybook/{filename}"
+        )
+
+        return {
+            "intro": intro.intro,
+            "question": intro.question,
+            "options": intro.options,
+            "outfit": intro.outfit,
+            "s3_url": s3_url
+        }
     
     except Exception as e:
         return {"status": "error", "message": f"동화 생성 실패: {e}"}
@@ -109,9 +130,28 @@ async def getContent(contentRequest: contentRequest):
         content = generateContent(contentRequest)
 
         # 스토리 저장
-        story.append(content["story"])
+        story.append(content.story)
+        
+        scene = content.story
 
-        return content
+        imgPrompt = createStoryImage(scene)
+        result = await generate_image_from_prompt(imgPrompt)
+
+        image_url = result["image_url"]
+        filename = result["used_image_name"]
+        s3_url = save_and_upload_image(
+            image_url=image_url,
+            local_filename=filename,
+            bucket_name="bookeating", 
+            s3_key=f"storybook/{filename}"
+        )
+
+        return {
+            "story": content.story,
+            "question": content.question,
+            "options": content.options,
+            "s3_url": s3_url
+        }
     
     except Exception as e:
         return {"status": "error", "message": f"동화 생성 실패: {e}"}
@@ -127,7 +167,7 @@ async def getEnding(contentRequest: contentRequest):
         ending = generateEnding(contentRequest)
 
         # 스토리 저장
-        story.append(ending["ending"])
+        story.append(ending.ending)
 
         return ending
     

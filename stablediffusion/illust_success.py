@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://taiwan-hearing-beatles-wichita.trycloudflare.com"
+COMFYUI_URL = "https://laser-playing-pulling-women.trycloudflare.com"
 WORKFLOW_PATH = "illust.json"
 BASE_IMAGE_NAME = "hello.jpeg"
 current_index = -1
@@ -17,13 +17,23 @@ class PromptRequest(BaseModel):
     prompt: str
 
 #  이미지 파일 이름 생성 함수
+call_count = 0
+current_index = 0
+
 def get_next_image_name():
-    global current_index
-    current_index += 1
+    global call_count, current_index
+    call_count += 1
+
+    # 5번 호출될 때마다 인덱스 1 증가
+    if call_count > 5:
+        call_count = 1
+        current_index += 1
+
     if current_index == 0:
         return BASE_IMAGE_NAME
-    name, ext = os.path.splitext(BASE_IMAGE_NAME)
-    return f"{name} ({current_index}){ext}"
+    else:
+        name, ext = os.path.splitext(BASE_IMAGE_NAME)
+        return f"{name} ({current_index}){ext}"
 
 #  이미지 생성 함수(비동기)
 async def generate_image_from_prompt(prompt: str):
