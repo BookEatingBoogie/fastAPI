@@ -1,17 +1,26 @@
-def splitParagraphs(text):
-    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+import re
 
-    for s in paragraphs:
-        print(s+"\n")
-    return paragraphs
 
-def formatStory(text):
-    numberedList = []
+def formatStory(renderStory, illustUrl):
+    formattedStory = [
+        {"story": story, "illustUrl": url}
+        for story, url in zip(renderStory, illustUrl)
+    ]
+    return formattedStory
 
-    for i,s in enumerate(text):
-        numberedList.append(f"{i+1}. {s}")
-    return "\n\n".join(numberedList)
+def getFileName(imgUrl: str):
+    return imgUrl.split("/")[-1]
 
 def formatPrompt(text):
     formatedPrompt = f'{{"prompt": "{text}"}}'
     return formatedPrompt
+
+def formatCharLook(base, outfit):
+    # "Wearing" 앞까지 분리
+    parts = re.split(r'(?i)\bwearing\b', base, maxsplit=1)
+    pre_wear = parts[0].strip().rstrip('.')
+
+    # 새 outfit으로 재조합
+    new_charLook = f"{pre_wear}. Wearing {outfit.lower()}."
+
+    return new_charLook

@@ -4,10 +4,8 @@ import requests
 import asyncio
 from fastapi import HTTPException
 
-from stablediffusion.image_uploader import download_image_from_s3
-
 # 설정값
-COMFYUI_URL = "https://choices-translation-recovered-obtained.trycloudflare.com"
+COMFYUI_URL = "https://accepting-january-first-hacker.trycloudflare.com"
 WORKFLOW_PATH = "character.json"
 current_index = -1
 
@@ -33,6 +31,8 @@ async def generate_character_from_prompt(file_name: str, prompt: str):
     print(file_name)
     try:
         global workflow
+        if workflow is None:
+            raise Exception("워크플로우 파일이 로드되지 않았습니다.")
         raw_workflow = workflow
 
         for node in raw_workflow.values():
@@ -45,7 +45,7 @@ async def generate_character_from_prompt(file_name: str, prompt: str):
 
             # 이미지 파일명 교체 (pose 관련 이미지는 유지)
             elif node.get("class_type") == "LoadImage":
-                if node["inputs"].get("image") != "posefinish.png":
+                if node["inputs"].get("image") != "posefinal.png":
                     node["inputs"]["image"] = file_name
 
             # 저장 노드 설정
@@ -93,7 +93,7 @@ async def generate_character_from_prompt(file_name: str, prompt: str):
             "status": "success",
             "prompt": prompt,
             "image_url": image_url,
-            "used_image_name": file_name
+            "image_filename": image_filename
         }
 
     except Exception as e:

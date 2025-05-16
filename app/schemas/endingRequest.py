@@ -5,3 +5,4 @@ class endingRequest(BaseModel):
     charName: str
     choice: str
     story: list[str]
+    imgUrl: str

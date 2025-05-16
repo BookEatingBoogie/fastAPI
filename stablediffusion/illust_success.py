@@ -7,10 +7,9 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://parameters-auctions-strips-verde.trycloudflare.com"
+COMFYUI_URL = "https://accepting-january-first-hacker.trycloudflare.com"
 WORKFLOW_PATH = "illust.json"
 BASE_IMAGE_NAME = "img3.jpeg"
-current_index = -1
 
 #  요청 데이터 모델 정의
 class PromptRequest(BaseModel):
@@ -25,40 +24,25 @@ def get_workflow():
     if not os.path.exists(WORKFLOW_PATH):
         raise HTTPException(status_code=404, detail="illust.json 파일이 없습니다.")
     with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
-        raw_workflow = json.load(f)
+        return json.load(f)
 
-def get_next_image_name():
-    global call_count, current_index
-
-    print(f"call_count: {call_count}, current_index: {current_index}")
-    call_count += 1
-
-    # 5번 호출될 때마다 인덱스 1 증가
-    if call_count > 5:
-        call_count = 1
-        current_index += 1
-
-    if current_index == 0:
-        return BASE_IMAGE_NAME
-    else:
-        name, ext = os.path.splitext(BASE_IMAGE_NAME)
-        return f"{name} ({current_index}){ext}"
+workflow = get_workflow()
 
 #  이미지 생성 함수(비동기)
-async def generate_image_from_prompt(prompt: str):
+async def generate_image_from_prompt(file_name: str, prompt: str):
     try:
         # 워크플로우 파일 로드
-        raw_workflow = get_workflow()
-
-        # 새 이미지 이름 생성
-        next_image_name = get_next_image_name()
+        global workflow
+        if workflow is None:
+            raise Exception("워크플로우 파일이 로드되지 않았습니다.")
+        raw_workflow = workflow
 
         # 워크플로우 내 텍스트 및 이미지 입력 값 수정
         for node in raw_workflow.values():
             if node.get("class_type") == "CLIPTextEncode":
                 node["inputs"]["text"] = prompt
             elif node.get("class_type") == "LoadImage":
-                node["inputs"]["image"] = next_image_name
+                node["inputs"]["image"] = file_name
 
         # ComfyUI에 프롬프트 전달 (POST 요청)
         res = requests.post(f"{COMFYUI_URL}/prompt", json={"prompt": raw_workflow})
@@ -90,7 +74,7 @@ async def generate_image_from_prompt(prompt: str):
             "status": "success",
             "prompt": prompt,
             "image_url": image_url,
-            "used_image_name": next_image_name
+            "image_filename": image_filename
         }
     
     # 예외 발생 시 HTTPException 반환

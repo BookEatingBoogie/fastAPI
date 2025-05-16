@@ -84,7 +84,7 @@ async def generate_sticker_from_prompt(prompt: str):
             "status": "success",
             "prompt": prompt,
             "image_url": image_url,
-            "used_image_name": next_image_name
+            "image_filename": image_filename
         }
     
     # 예외 발생 시 HTTPException 반환

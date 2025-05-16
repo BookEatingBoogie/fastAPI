@@ -1,9 +1,10 @@
 import json
 import requests
 from stablediffusion.character_success import COMFYUI_URL
-from stablediffusion.image_uploader import download_image_from_s3
+from stablediffusion.s3_uploader import download_image_from_s3
 
-def uploadImage(imgUrl):
+# comfyUI에 이미지 업로드
+def uploadImage_to_comfyUI(imgUrl):
     try:
         #업로드할 이미지와 서버 설정
         image_buffer, file_name = download_image_from_s3(imgUrl)

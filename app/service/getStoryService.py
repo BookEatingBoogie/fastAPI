@@ -29,7 +29,7 @@ def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
   1. intro (Korean): Write the story intro **only in Korean** (about 300 characters).
   2. question (Korean): Ask one narrative question  in **Korean only** (where, who, what, or why). The question must not simply summarize or restate what happened in the story. Instead, it should help lead to a meaningful next event or choice.
   3. options (Korean): Give three one-word options related to that question in **Korean only**.
-  4. charLook (English): Describe the character’s outfit in one concise sentence in **English only**. Focus only on clothing and accessories (e.g. top, bottom, jewelry, shoes), with no mention of the character’s name or other traits. Match the style and tone to the story’s setting and mood (e.g. fantasy ocean world, magical forest, etc). Use evocative but clear language suitable for use in image generation prompts.
+  4. charLook (English): Describe the character’s outfit in one concise sentence in **English only**. Focus only on clothing and accessories (e.g. top, bottom, jewelry, shoes), with no mention of the character’s name or other traits. Include the color of the outfit. Match the style and tone to the story’s setting and mood (e.g. fantasy ocean world, magical forest, etc). Use evocative but clear language suitable for use in image generation prompts.
 
   Important: Respond using the fields and languages exactly as instructed. Do not include explanations, formatting symbols, or extra text.
   """
@@ -181,6 +181,8 @@ def generateEnding(contentRequest):
 
 def generateStory(story):
 
+  user_content = [{"type": "input_text", "text": scene} for scene in story]
+
   try:
     response = client.responses.parse(
       model="gpt-4o-2024-11-20",
@@ -188,7 +190,7 @@ def generateStory(story):
         {"role": "developer", "content": "You are responsible for refining an array of separated fairytale scenes into a smoothly connected story. The input and output must remain in array format, and both the order and number of scenes must be preserved."+
         "Improve the flow and emotional continuity by adjusting expressions or adding transitional phrases within each scene. Keep the core meaning intact, but feel free to rephrase naturally."+
         "Each scene must be written in Korean and limited to 300 characters or fewer.  Do not include any extra explanations or formatting."},
-        {"role": "user", "content": story}
+        {"role": "user", "content": user_content}
       ],
       text_format=renderOutput
     )
@@ -198,37 +200,3 @@ def generateStory(story):
     return response.output_parsed
   except Exception as e:
     raise e
-
-
-
-
-
-
-
-
-# 동화 삽화 생성 프롬프트 요청
-def requestStoryImagePrompt(paragraphs):
-  
-  # 각 문단에 번호 부여.
-  numberedList = formatStory(paragraphs)
-
-  # user 프롬프트
-  userPrompt = f"""Here are the story paragraphs:
-    {numberedList}
-    Please generate one image prompt for each paragraph in the same numbered format."""
-
-  #삽화 생성 프롬프트 요청
-  response = client.responses.create(
-    model="gpt-4o",
-    input=[
-      {"role":"developer", "content":"You are an assistant that creates visually rich and detailed image prompts for a text-to-image model like Stable Diffusion. You will receive a numbered list of storybook paragraphs. For each paragraph, generate one corresponding illustration prompt in natural English.\n"+
-      "Each prompt should vividly describe the scene as if it were an illustration in a children’s picture book. Include visual elements such as:\n"+
-      "- Setting and background (place, time of day, weather)\n"+
-      "- Mood or emotional tone"+
-      "Respond in the same numbered list format: one image prompt per paragraph. Keep the prompts descriptive, but concise and focused on what should be visually represented in the image.\n"+
-      "Do not include title of each image prompt per paragraph."},
-      {"role":"user", "content": userPrompt}
-    ]
-  )
-  print(response.output_text)
-  return response.output_text
