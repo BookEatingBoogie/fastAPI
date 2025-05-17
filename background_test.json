@@ -1,0 +1,77 @@
+{
+  "prompt": {
+    "4": {
+      "inputs": {
+        "ckpt_name": "toonyou_beta6.safetensors",
+        "load_on_start": false
+      },
+      "class_type": "CheckpointLoaderSimple"
+    },
+    "5": {
+      "inputs": {
+        "width": 768,
+        "height": 768,
+        "batch_size": 1
+      },
+      "class_type": "EmptyLatentImage"
+    },
+    "6": {
+      "inputs": {
+        "text": "",
+        "clip": ["4", 1]
+      },
+      "class_type": "CLIPTextEncode"
+    },
+    "7": {
+      "inputs": {
+        "text": "disfigured, deformed, ugly",
+        "clip": ["4", 1]
+      },
+      "class_type": "CLIPTextEncode"
+    },
+    "3": {
+      "inputs": {
+        "seed": 849264212774686,
+        "steps": 20,
+        "cfg": 8,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1,
+        "model": ["4", 0],
+        "positive": ["6", 0],
+        "negative": ["7", 0],
+        "latent_image": ["5", 0]
+      },
+      "class_type": "KSampler"
+    },
+    "8": {
+      "inputs": {
+        "samples": ["3", 0],
+        "vae": ["4", 2]
+      },
+      "class_type": "VAEDecode"
+    },
+    "10": {
+      "inputs": {
+        "image": ["8", 0],
+        "model": "RMBG-2.0",
+        "sensitivity": 1.0,
+        "process_res": 1024,
+        "mask_blur": 4,
+        "mask_offset": 0,
+        "background": "Transparent",
+        "invert_output": false,
+        "optimization": "high_quality",
+        "clean_foreground": true
+      },
+      "class_type": "RMBG"
+    },
+    "9": {
+      "inputs": {
+        "filename_prefix": "clean_output",
+        "images": ["10", 0]
+      },
+      "class_type": "SaveImage"
+    }
+  }
+}

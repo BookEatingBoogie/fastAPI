@@ -61,6 +61,7 @@
     },
     "class_type": "KSampler"
   },
+
   "8": {
     "inputs": {
       "samples": [
@@ -83,18 +84,18 @@
       "model": "RMBG-2.0",
       "sensitivity": 1.0,
       "process_res": 1024,
-      "mask_blur": 4,
+      "mask_blur": 0,
       "mask_offset": 0,
-      "background": "Transparent",
+      "background": "Alpha",
       "invert_output": false,
-      "optimization": "high_quality",
-      "clean_foreground": true
+      "optimization": "default",
+      "clean_foreground": false
     },
     "class_type": "RMBG"
   },
   "9": {
     "inputs": {
-      "filename_prefix": "clean",
+      "filename_prefix": "txt2img",
       "images": [
         "40",
         0

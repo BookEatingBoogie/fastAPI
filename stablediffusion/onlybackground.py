@@ -7,8 +7,8 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://alternatively-knows-overview-textiles.trycloudflare.com"
-WORKFLOW_PATH = "background.json"
+COMFYUI_URL = "https://citation-humanities-feedback-marks.trycloudflare.com"
+WORKFLOW_PATH = "background_no_bg.json"
 
 #  요청 데이터 모델 정의
 class PromptRequest(BaseModel):
