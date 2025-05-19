@@ -14,8 +14,8 @@ import os
 app = FastAPI()
 
 #코랩에서 사용한 comfyui는 cloudflare을 사용했기 때문에 url이 항상 변합니다. 이를 고려하여 url을 변경해줘야 합니다.
-COMFYUI_URL = "https://environment-direct-cuba-lawyer.trycloudflare.com"
-WORKFLOW_PATH = "test.json"
+COMFYUI_URL = "https://administrative-discharge-sunny-modified.trycloudflare.com"
+WORKFLOW_PATH = "illust.json"
 
 class PromptRequest(BaseModel):
     prompt: str 
@@ -36,7 +36,7 @@ async def generate_image(data: PromptRequest):
                     node["inputs"]["text"] = data.prompt
 
         payload = {"prompt": raw_workflow}
-        print("🔥 ComfyUI로 보낼 JSON 구조:")
+        print(" ComfyUI로 보낼 JSON 구조:")
         print(json.dumps(payload, indent=2))
 
         # 프롬프트 전송 코드
@@ -78,7 +78,3 @@ async def generate_image(data: PromptRequest):
         raise HTTPException(status_code=500, detail=f"프롬프트 전송 실패: {str(req_err)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)

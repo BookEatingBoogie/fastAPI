@@ -14,8 +14,8 @@ import os
 app = FastAPI()
 
 # ComfyUI 주소 (로컬이 아닌 외부 URL 사용 시 변경)
-COMFYUI_URL = "https://environment-direct-cuba-lawyer.trycloudflare.com"
-WORKFLOW_PATH = "finish.json"
+COMFYUI_URL = "https://separated-chad-captured-consultants.trycloudflare.com"
+WORKFLOW_PATH = "character.json"
 
 class PromptRequest(BaseModel):
     prompt: str
@@ -79,7 +79,7 @@ async def generate_image(data: PromptRequest):
         if not outputs:
             raise Exception("출력 결과가 비어 있습니다. (이미지 생성에 실패했을 수 있습니다)")
 
-        # ✅ SaveImage 노드에서 이미지 추출
+        # SaveImage 노드에서 이미지 추출
         image_url = None
         for output in outputs.values():
             if "images" in output:
@@ -100,6 +100,3 @@ async def generate_image(data: PromptRequest):
         raise HTTPException(status_code=500, detail=f"프롬프트 전송 실패: {str(req_err)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
