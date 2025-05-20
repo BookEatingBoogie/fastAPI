@@ -1,15 +1,15 @@
 {
   "4": {
     "inputs": {
-      "ckpt_name": "toonyou_beta6.safetensors",
+      "ckpt_name": "disneyPixarCartoon_v10.safetensors",
       "load_on_start": false
     },
     "class_type": "CheckpointLoaderSimple"
   },
   "5": {
     "inputs": {
-      "width": 768,
-      "height": 768,
+      "width": 512,
+      "height": 512,
       "batch_size": 1
     },
     "class_type": "EmptyLatentImage"
@@ -26,7 +26,7 @@
   },
   "7": {
     "inputs": {
-      "text": "disfigured, deformed, ugly",
+      "text": "(multiple objects), blurry, watermark, text, extra parts, decoration, shadow, floor, background elements, clutter, distortion, duplicate",
       "clip": [
         "4",
         1

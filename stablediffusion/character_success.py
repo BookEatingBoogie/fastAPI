@@ -5,7 +5,7 @@ import asyncio
 from fastapi import HTTPException
 
 # 설정값
-COMFYUI_URL = "https://sanyo-did-keeps-me.trycloudflare.com"
+COMFYUI_URL = "https://positioning-quantity-static-boating.trycloudflare.com"
 WORKFLOW_PATH = "character.json"
 
 def get_workflow():

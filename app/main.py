@@ -15,6 +15,9 @@ from stablediffusion.s3_uploader import *
 from stablediffusion.illust_success import *
 from stablediffusion.character_success import *
 from stablediffusion.comfyUI_uploader import uploadImage_to_comfyUI
+from stablediffusion.sticker_success import generate_sticker_from_prompt
+from app.schemas.stickerRequest import StickerRequest
+
 
 app = FastAPI()
 
@@ -265,6 +268,29 @@ async def getStory(endingRequest: endingRequest):
 
     return s3_url
 
+@app.post("/generate/sticker/")
+def generate_sticker(req: StickerRequest):
+    try:
+
+        # 스티커 생성 (동기 호출처럼 사용)
+        result = asyncio.run(generate_sticker_from_prompt(req.prompt))  # 또는 내부 비동기 제거 시 그냥 함수 호출
+        image_url = result["image_url"]
+        image_filename = result["image_filename"]
+
+        # S3 업로드
+        s3_url = upload_image_to_s3(
+            image_url=image_url,
+            bucket_name="bookeating",
+            s3_key=f"sticker/{image_filename}"
+        )
+
+        return {
+            "status": "success",
+            "s3_url": s3_url
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"스티커 생성 실패: {str(e)}")
 
 @app.post("/test/")
 async def test():
@@ -294,6 +320,10 @@ async def test():
     except Exception as e:
         raise HTTPException(status_code=e.status_code, detail=f"생성 실패: {e}")
     
+@app.get("/stickers")
+def get_stickers():
+    return sticker_url
+
 
 @app.get("/")
 def start():

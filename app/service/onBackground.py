@@ -11,6 +11,7 @@ from stablediffusion.illust_high import generate_image_high_from_prompt
 from stablediffusion.illust_success import generate_image_from_prompt
 from stablediffusion.s3_uploader import upload_image_to_s3
 
+sticker_url = []
 
 async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str, choice: str, charName: str, charLook: str, responseId: str):
     loop = asyncio.get_running_loop()
@@ -34,6 +35,9 @@ async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str,
     image_url = result["image_url"]
     image_filename = result["image_filename"]
 
+    sticker_prompt = prompt
+    asyncio.create_task(generate_sticker_and_store(sticker_prompt))
+
     # 삽화 업로드
     s3_url = await loop.run_in_executor(None, upload_image_to_s3, image_url, "bookeating", f"storybook/temp/{image_filename}")
     print(f"{scene_idx} 삽화 업로드 완료: {s3_url}")
@@ -46,6 +50,7 @@ async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str,
         "illust_prompt": prompt,
         "responseId": responseId
     }
+    
 
 # 동화 엔딩 생성
 async def handle_generate_ending(request_id: str, file_name: str, choice: str, charName: str, charLook: str):
@@ -68,6 +73,7 @@ async def handle_generate_ending(request_id: str, file_name: str, choice: str, c
     # 삽화 업로드
     s3_url = await loop.run_in_executor(None, upload_image_to_s3, image_url, "bookeating", f"storybook/temp/{image_filename}")
     print(f"엔딩 삽화 업로드 완료: {s3_url}")
+
     
     return {
         "story": ending.story,
@@ -93,6 +99,7 @@ async def getContentNow(choice:str, charName:str, responseId:str, file_name:str,
             bucket_name="bookeating", 
             s3_key=f"storybook/temp/{image_filename}"
         )
+
 
         return {
             "story": content.story,
@@ -131,6 +138,25 @@ async def getEndingNow(choice:str, charName:str, responseId:str, file_name:str):
     except Exception as e:
         raise HTTPException(status_code=e.status_code, detail=f"동화 : 엔딩 생성 실패: {e}")
     
+async def generate_sticker_and_store(prompt: str):
+    print("[Sticker] 호출 시작")
+    try:
+        from stablediffusion.sticker_success import generate_sticker_from_prompt
+        result = await generate_sticker_from_prompt(prompt)
+        image_url = result["image_url"]
+        image_filename = result["image_filename"]
+
+        s3_url = upload_image_to_s3(
+            image_url=image_url,
+            bucket_name="bookeating",
+            s3_key=f"sticker/{image_filename}"
+        )
+        sticker_url.append(s3_url)
+        print(f"[Sticker 생성 완료] {s3_url}")
+    except Exception as e:
+        print(f"[Sticker Error] 생성 실패: {e}")
+
+
 async def generate_illust_high(file_name: str, prompts: list, storyId: str):
     loop = asyncio.get_running_loop()
 

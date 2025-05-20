@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://celebrity-pepper-bulgaria-jackson.trycloudflare.com"
+COMFYUI_URL = "https://positioning-quantity-static-boating.trycloudflare.com"
 WORKFLOW_PATH = "illust.json"
 
 def get_workflow():
@@ -70,4 +70,4 @@ def generate_image_from_prompt(file_name: str, prompt: str):
     # 예외 발생 시 HTTPException 반환
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
