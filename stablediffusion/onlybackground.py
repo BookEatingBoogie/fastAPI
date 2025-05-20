@@ -7,8 +7,8 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://sanyo-did-keeps-me.trycloudflare.com"
-WORKFLOW_PATH = "background_no_bg.json"
+COMFYUI_URL = "https://celebrity-pepper-bulgaria-jackson.trycloudflare.com"
+WORKFLOW_PATH = "background.json"
 
 def get_workflow():
     # 워크플로우 파일 확인
@@ -20,7 +20,7 @@ def get_workflow():
         
 workflow = get_workflow()
 
-async def generate_sticker_from_prompt(prompt: str):
+async def generate_background_from_prompt(prompt: str):
     try:
         global workflow
 

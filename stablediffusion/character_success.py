@@ -5,24 +5,15 @@ import asyncio
 from fastapi import HTTPException
 
 # 설정값
-COMFYUI_URL = "https://accepting-january-first-hacker.trycloudflare.com"
+COMFYUI_URL = "https://sanyo-did-keeps-me.trycloudflare.com"
 WORKFLOW_PATH = "character.json"
-current_index = -1
-
-# 이미지 파일 이름 자동 증가
-call_count = 0
-current_index = 0
-
-
-# 캐릭터 이미지 생성 함call_count = 0
-current_index = 0
 
 def get_workflow():
     # 워크플로우 파일 확인
-        if not os.path.exists(WORKFLOW_PATH):
-            raise HTTPException(status_code=404, detail="character.json 워크플로우 파일이 없습니다.")
-        # 워크플로우 로딩 및 수정
-        with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
+    if not os.path.exists(WORKFLOW_PATH):
+        raise HTTPException(status_code=404, detail=f"{WORKFLOW_PATH} 워크플로우 파일이 없습니다.")
+    # 워크플로우 로딩 및 수정
+    with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
 
 workflow = get_workflow()
@@ -90,8 +81,6 @@ async def generate_character_from_prompt(file_name: str, prompt: str):
 
         # 결과 반환
         return {
-            "status": "success",
-            "prompt": prompt,
             "image_url": image_url,
             "image_filename": image_filename
         }

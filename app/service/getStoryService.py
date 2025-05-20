@@ -11,14 +11,11 @@ from app.service.storyFormating import formatStory
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-responseId = ""
 
 
 # 동화 도입부 생성 gpt 호출 - 최초 동화 생성 시 호출
 def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
   
-  global responseId
-
   # 요청 프롬프트
   storyPrompt = f"""Tell a story beginning in {introRequest.place},
   inspired by {introRequest.genre},
@@ -51,22 +48,20 @@ def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
     responseId = response.id
 
     print(response.output_parsed)
-    return response.output_parsed
+    return response.output_parsed, responseId
   
   except Exception as e:
     raise e
 
 
 # 동화 내용 생성 gpt 호출 - 중심부 생성 시 호출
-def generateContent(contentRequest): # select: 질문 선택지, charName: 주인공 이름
-
-  global responseId
+def generateContent(choice, charName, responseId): # select: 질문 선택지, charName: 주인공 이름
   
   # 요청 프롬프트
-  storyPrompt = f"""The user has selected "{contentRequest.choice}" as their answer to the previous question.
+  storyPrompt = f"""The user has selected "{choice}" as their answer to the previous question.
   Please continue the story in Korean, writing the next scene.
   This scene should naturally follow the previous events, and reflect the user’s choice within the flow of the narrative.
-  It should also include the actions of the main character, {contentRequest.charName}, and their surrounding situation.
+  It should also include the actions of the main character, {charName}, and their surrounding situation.
 
   Avoid flat or generic scenes such as “즐거운 시간을 보냈습니다.” or “즐거운 하루를 보냈습니다.” Include some form of tension, surprise, discovery, or a decision the character has to make.
 
@@ -80,6 +75,8 @@ def generateContent(contentRequest): # select: 질문 선택지, charName: 주�
   Important: Respond using the fields and languages exactly as instructed. Do not include explanations, formatting symbols, or extra text. Respond in Korean only.
   """
 
+  print(responseId)
+
   # 동화 중심부 생성 프롬프트
   try:
     response = client.responses.parse(
@@ -96,22 +93,20 @@ def generateContent(contentRequest): # select: 질문 선택지, charName: 주�
     responseId = response.id
 
     print(response.output_parsed)
-    return response.output_parsed
+    return response.output_parsed, responseId
   
   except Exception as e:
     raise e
 
 
 # 동화 내용 생성 gpt 호출 - 결말 생성을 위한 질문 생성 프롬프트트
-def generateFinalQuestion(contentRequest): # select: 질문 선택지, charName: 주인공 이름
-
-  global responseId
+def generateFinalQuestion(choice, charName, responseId): # select: 질문 선택지, charName: 주인공 이름
   
   # 요청 프롬프트
-  storyPrompt = f"""The user has selected "{contentRequest.choice}" as their answer to the previous question.
+  storyPrompt = f"""The user has selected "{choice}" as their answer to the previous question.
   Please continue the story in Korean, writing the next scene.
   This scene should naturally follow the previous events, and reflect the user’s choice within the flow of the narrative.
-  It should also include the actions of the main character, {contentRequest.charName}, and their surrounding situation.
+  It should also include the actions of the main character, {charName}, and their surrounding situation.
 
   Avoid flat or generic scenes such as “즐거운 시간을 보냈습니다.” or “즐거운 하루를 보냈습니다.” Include some form of tension, surprise, discovery, or a decision the character has to make.
 
@@ -124,6 +119,7 @@ def generateFinalQuestion(contentRequest): # select: 질문 선택지, charName:
 
   Important: Respond using the fields and languages exactly as instructed. Do not include explanations, formatting symbols, or extra text. Respond in Korean only.
   """
+  print(responseId)
 
   # 동화 중심부 생성 프롬프트
   try:
@@ -138,26 +134,26 @@ def generateFinalQuestion(contentRequest): # select: 질문 선택지, charName:
     )
 
     # 현재 응답 id 저장
-    responseId = response.id
+    responseId_new = response.id
 
     print(response.output_parsed)
-    return response.output_parsed
+    return response.output_parsed, responseId_new
   
   except Exception as e:
     raise e
 
 # 동화 결말부 프롬프트 요청
-def generateEnding(contentRequest):
-
-  global responseId
+def generateEnding(choice, charName, responseId):
 
   # 요청 프롬프트
-  storyPrompt = f"""The user has selected "{contentRequest.choice}" as their answer to the previous question.
+  storyPrompt = f"""The user has selected "{choice}" as their answer to the previous question.
   Please continue the story in Korean, writing the final scene. It's the end of the story.
   The ending should feel complete and meaningful. It must leave a gentle emotional impact or convey a simple, age-appropriate moral for children between 7 and 9 years old.
   Avoid rushed conclusions or vague endings. Show what the main character experiences or learns through the final event.
   Write the ending in Korean, about 300 characters. Do not include any extra explanations or formatting.
-  It should also include the actions of the main character, {contentRequest.charName}, and their surrounding situation."""
+  It should also include the actions of the main character, {charName}, and their surrounding situation."""
+
+  print(responseId)
 
   # 동화 결말 생성 프롬프트
   try:
@@ -179,7 +175,7 @@ def generateEnding(contentRequest):
 
 
 
-def generateStory(story):
+async def generateStory(story):
 
   user_content = [{"type": "input_text", "text": scene} for scene in story]
 
