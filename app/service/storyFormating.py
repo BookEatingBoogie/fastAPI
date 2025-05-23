@@ -3,8 +3,6 @@ import pandas as pd
 import os
 from google.cloud import translate
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.expanduser("C:/BookEating/model-obelisk-460705-i3-cb0d1bb7542d.json")
-
 # 한글-영어 맵핑 사전 읽어오기
 df = pd.read_csv('object_mapping.csv', encoding='utf-8')
 object_dict = dict(zip(df['Korean'], df['English']))
