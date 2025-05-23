@@ -1,0 +1,106 @@
+{
+  "4": {
+    "inputs": {
+      "ckpt_name": "disneyPixarCartoon_v10.safetensors",
+      "load_on_start": false
+    },
+    "class_type": "CheckpointLoaderSimple"
+  },
+  "5": {
+    "inputs": {
+      "width": 512,
+      "height": 512,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage"
+  },
+  "6": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "7": {
+    "inputs": {
+      "text": "(multiple objects), blurry, watermark, text, extra parts, decoration, shadow, floor, background elements, clutter, distortion, duplicate",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode"
+  },
+  "3": {
+    "inputs": {
+      "seed": 608548260914332,
+      "steps": 30,
+      "cfg": 6.5,
+      "sampler_name": "ddpm",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "KSampler"
+  },
+
+  "8": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "VAEDecode"
+  },
+  "40": {
+    "inputs": {
+      "image": [
+        "8",
+        0
+      ],
+      "model": "RMBG-2.0",
+      "sensitivity": 1.0,
+      "process_res": 1024,
+      "mask_blur": 0,
+      "mask_offset": 0,
+      "background": "Alpha",
+      "invert_output": false,
+      "optimization": "default",
+      "clean_foreground": false
+    },
+    "class_type": "RMBG"
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "txt2img",
+      "images": [
+        "40",
+        0
+      ]
+    },
+    "class_type": "SaveImage"
+  }
+}

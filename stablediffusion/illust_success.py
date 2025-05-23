@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 import asyncio
 from fastapi import APIRouter, HTTPException
@@ -7,17 +8,8 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://accepting-january-first-hacker.trycloudflare.com"
+COMFYUI_URL = "https://jewellery-dubai-placing-poems.trycloudflare.com"
 WORKFLOW_PATH = "illust.json"
-BASE_IMAGE_NAME = "img3.jpeg"
-
-#  요청 데이터 모델 정의
-class PromptRequest(BaseModel):
-    prompt: str
-
-#  이미지 파일 이름 생성 함수
-call_count = 0
-current_index = 0
 
 def get_workflow():
     #워크플로우 파일 로드 및 예외처리
@@ -29,7 +21,7 @@ def get_workflow():
 workflow = get_workflow()
 
 #  이미지 생성 함수(비동기)
-async def generate_image_from_prompt(file_name: str, prompt: str):
+def generate_image_from_prompt(file_name: str, prompt: str):
     try:
         # 워크플로우 파일 로드
         global workflow
@@ -58,7 +50,7 @@ async def generate_image_from_prompt(file_name: str, prompt: str):
             outputs = result_json.get(prompt_id, {}).get("outputs", {}) or result_json.get("outputs", {})
             if outputs: 
                 break
-            await asyncio.sleep(1)
+            time.sleep(1)
 
         # 결과가 비어 있으면 예외 발생
         if not outputs:
@@ -71,8 +63,6 @@ async def generate_image_from_prompt(file_name: str, prompt: str):
 
         # 최종 결과 반환(필요 없으면 지워도 됨)
         return {
-            "status": "success",
-            "prompt": prompt,
             "image_url": image_url,
             "image_filename": image_filename
         }
