@@ -1,35 +1,39 @@
 import json
 import requests
-from stablediffusion.character_success import COMFYUI_URL
+from stablediffusion.comfyUI_servers import COMFYUI_SERVERS  # 세 개의 서버 URL 리스트
 from stablediffusion.s3_uploader import download_image_from_s3
 
-# comfyUI에 이미지 업로드
+# comfyUI의 모든 서버에 이미지 업로드
+
 def uploadImage_to_comfyUI(imgUrl):
     try:
-        #업로드할 이미지와 서버 설정
+        # 이미지 다운로드
         image_buffer, file_name = download_image_from_s3(imgUrl)
-
         image_buffer.seek(0)
+
         # 멀티파트 폼 데이터 구성
-
-        # with open('./temp/test.png', 'rb') as f:
-        #     file = f.read()
-
         files = {
-        'image': (file_name, image_buffer, 'image/jpeg')
+            'image': (file_name, image_buffer, 'image/jpeg')
         }
         data = {
-        'type': 'input', # 업로드할 폴더 종류: input/temp/output
-        'overwrite': 'false' # 이미 존재하면 덮어쓸지 여부
+            'type': 'input',
+            'overwrite': 'false'
         }
-        # POST 요청으로 이미지 업로드
-        response = requests.post(f"{COMFYUI_URL}/upload/image", files=files, data=data)
-        print(response.text)
 
-        meta = json.loads(response.text)
-        filename = meta.get("name")
+        uploaded_filename = None
 
-        return filename
+        # 모든 서버에 동일한 이미지 업로드
+        for server_url in COMFYUI_SERVERS:
+            try:
+                response = requests.post(f"{server_url}/upload/image", files=files, data=data)
+                response.raise_for_status()
+                print(f"[업로드 성공] {server_url}: {response.text}")
+                meta = json.loads(response.text)
+                uploaded_filename = meta.get("name")
+            except Exception as e:
+                print(f"[업로드 실패] {server_url}: {e}")
+
+        return uploaded_filename  # 가장 마지막 성공한 파일명 반환
 
     except Exception as e:
         print(f"[ERROR] 이미지 업로드 실패: {e}")

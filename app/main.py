@@ -104,14 +104,7 @@ async def getIntro(introRequest: introRequest):
         STORY.append(intro.intro)
         FILE_NAME = getFileName(introRequest.imgUrl)
 
-        # 삽화 프롬프트 저장
-        ILLUST_PROMPT.append(imgPrompt)
 
-        # 도입부 삽화는 서버 0번으로 고정
-        server_url = get_server_by_index(0)
-        result = generate_image_from_prompt(FILE_NAME, imgPrompt, server_url)
-        print(result)
-        
         # 스티커 생성 호출
         asyncio.create_task(call_sticker_generator(intro.options))
 
@@ -120,9 +113,16 @@ async def getIntro(introRequest: introRequest):
         CHAR_LOOK = formatCharLook(introRequest.charLook, intro.charLook)
         print(CHAR_LOOK)
 
-        
+        # 삽화 프롬프트 저장
+        ILLUST_PROMPT.append(imgPrompt)
+
+        # 도입부 삽화는 서버 0번으로 고정
+        server_url = get_server_by_index(0)
+        result = generate_image_from_prompt(FILE_NAME, imgPrompt, server_url)
+        print(result)
 
         RESPONSE_ID = responseId
+
 
         requestId = str(uuid.uuid4())
         print(requestId)
@@ -144,6 +144,7 @@ async def getIntro(introRequest: introRequest):
 
         print(f"scene 1 생성 시작. {t}")
 
+
         image_url = result["image_url"]
         filename = result["image_filename"]
         s3_url = upload_image_to_s3(
@@ -153,6 +154,7 @@ async def getIntro(introRequest: introRequest):
         )
 
         ILLUST_URL.append(s3_url)
+
 
         print(requestId)
 
