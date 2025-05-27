@@ -11,9 +11,24 @@ from stablediffusion.illust_high import generate_image_high_from_prompt
 from stablediffusion.illust_success import generate_image_from_prompt
 from stablediffusion.s3_uploader import upload_image_to_s3
 from stablediffusion.sticker_success import generate_sticker_from_prompt
+from stablediffusion.onlybackground import *
 from stablediffusion.comfyUI_servers import get_server_by_index
 
 sticker_url = []
+
+# 삽화/배경 프롬프트 기반 이미지 생성 분기 처리 함수
+def get_illustration_result(file_name, prompt, charLook, server_url):
+    loop = asyncio.get_running_loop()
+
+    if prompt.startswith("person,"):
+        refined_prompt = prompt.replace("person, ", "", 1) + " " + charLook.lower()
+        return loop.run_in_executor(None, generate_image_from_prompt, file_name, refined_prompt, server_url)
+
+    elif prompt.startswith("background,"):
+        return loop.run_in_executor(None, generate_background_from_prompt, file_name, prompt, server_url)
+
+    else:
+        raise ValueError(f"Invalid prompt format: {prompt}")
 
 async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str, choice: str, charName: str, charLook: str, responseId: str, server_url: str):
     loop = asyncio.get_running_loop()
@@ -25,10 +40,10 @@ async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str,
 
     print(f"{scene_idx} 생성 완료: {content.story}")
 
-    prompt = await loop.run_in_executor(None, createStoryImage, content.story) + charLook.lower()
+    prompt = await loop.run_in_executor(None, createStoryImage, content.story)
     print(f"{scene_idx} 삽화 프롬프트 생성 완료: {prompt}")
 
-    result = await loop.run_in_executor(None, generate_image_from_prompt, file_name, prompt, server_url)
+    result = await get_illustration_result(file_name, prompt, charLook, server_url)
     print(f"{scene_idx} 삽화 생성 완료: {result}")
 
     image_url = result["image_url"]
@@ -52,10 +67,10 @@ async def handle_generate_ending(request_id: str, file_name: str, choice: str, c
     ending = await loop.run_in_executor(None, generateEnding, choice, charName)
     print(f"엔딩 생성 완료: {ending.story}")
 
-    prompt = await loop.run_in_executor(None, createStoryImage, ending.story) + charLook.lower()
+    prompt = await loop.run_in_executor(None, createStoryImage, ending.story)
     print(f"엔딩 삽화 프롬프트 생성 완료: {prompt}")
 
-    result = await loop.run_in_executor(None, generate_image_from_prompt, file_name, prompt, server_url)
+    result = await get_illustration_result(file_name, prompt, charLook, server_url)
     print(f"엔딩 삽화 생성 완료: {result}")
 
     image_url = result["image_url"]

@@ -4,10 +4,9 @@ import requests
 import asyncio
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from stablediffusion.comfyUI_servers import get_server_by_index
 
-
-#  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://additions-both-described-intended.trycloudflare.com"
+COMFYUI_URL = get_server_by_index(0)
 WORKFLOW_PATH = "illust_1024.json"
 
 def get_workflow():

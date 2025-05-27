@@ -4,8 +4,8 @@ import requests
 import asyncio
 from fastapi import HTTPException
 
-# 설정값
-COMFYUI_URL = "https://modes-letter-supporters-wires.trycloudflare.com"
+from stablediffusion.comfyUI_servers import get_server_by_index
+COMFYUI_URL = get_server_by_index(0)
 WORKFLOW_PATH = "character.json"
 
 def get_workflow():
