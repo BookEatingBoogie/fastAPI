@@ -1,11 +1,12 @@
 from typing import Dict
 import uuid
-from fastapi import FastAPI
+from fastapi import Body, FastAPI
 
 from app.schemas.endingRequest import endingRequest
 from app.schemas.contentRequest import contentRequest
 from app.schemas.imgPrompt import imgUrl
 from app.schemas.introRequest import introRequest
+from app.schemas.stickerRequest import StickerRequest
 from app.service.getImgPromptService import *
 from app.service.getStoryService import *
 from app.service.onBackground import *
@@ -15,9 +16,6 @@ from stablediffusion.s3_uploader import *
 from stablediffusion.illust_success import *
 from stablediffusion.character_success import *
 from stablediffusion.comfyUI_uploader import uploadImage_to_comfyUI
-from stablediffusion.sticker_success import generate_sticker_from_prompt
-from app.schemas.stickerRequest import StickerRequest
-
 
 app = FastAPI()
 
@@ -50,7 +48,7 @@ async def generateCharacter(imgUrl: imgUrl):
          # 1) S3에서 이미지 다운로드 (blocking) → 스레드 풀에 위임
         upload_task = loop.run_in_executor(None, uploadImage_to_comfyUI, imgUrl.imgUrl)
         # 2) prompt 생성 함수도 blocking이면 스레드 풀에 위임
-        prompt_task   = loop.run_in_executor(None, createCharacter, imgUrl.imgUrl)
+        prompt_task = loop.run_in_executor(None, createCharacter, imgUrl.imgUrl)
          # 두 작업을 동시에 진행 → 둘 다 완료되면 결과를 한꺼번에 받음
         file_name, imgPrompt = await asyncio.gather(upload_task, prompt_task)
 
@@ -89,6 +87,7 @@ tasks: Dict[str, Dict[int, Dict[str, asyncio.Task]]] = {}
 # 동화 도입부 생성
 @app.post("/generate/intro/")
 async def getIntro(introRequest: introRequest):
+    loop = asyncio.get_running_loop()
 
     global STORY, ILLUST_URL, CHAR_LOOK, FILE_NAME, RESPONSE_ID, ILLUST_PROMPT
 
@@ -104,6 +103,9 @@ async def getIntro(introRequest: introRequest):
         # 스토리 저장
         STORY.append(intro.intro)
         FILE_NAME = getFileName(introRequest.imgUrl)
+
+        # 스티커 생성 호출
+        asyncio.create_task(call_sticker_generator(intro.options))
 
         imgPrompt = createStoryImage(intro.intro)
 
@@ -128,6 +130,7 @@ async def getIntro(introRequest: introRequest):
                 handle_generate_scene(requestId, 1, FILE_NAME, choice, introRequest.charName, CHAR_LOOK, RESPONSE_ID)
             )
             tasks[requestId][1][choice] = t
+            
         print(f"scene 1 생성 시작. {t}")
         # 삽화 이미지 업로드    
         image_url = result["image_url"]
@@ -211,6 +214,9 @@ async def getContent(contentRequest: contentRequest):
             tasks[requestId][sceneIdx+1][choice] = t
             print(f"scene {sceneIdx+1} 생성 시작.")
 
+        # 스티커 생성 호출
+        asyncio.create_task(call_sticker_generator(result["choices"]))
+
         return {
             "requestId": requestId,
             "story": result["story"],
@@ -251,6 +257,9 @@ async def getStory(endingRequest: endingRequest):
         generateStory(STORY),
         generate_illust_high(FILE_NAME, ILLUST_PROMPT, endingRequest.storyId)
     )
+
+    # rendering = check_and_edit_story(render_result.paragraphs)
+
     
     formattedStory = formatStory(render_result.paragraphs, high_illusts)
 
@@ -268,66 +277,52 @@ async def getStory(endingRequest: endingRequest):
 
     return s3_url
 
-@app.post("/generate/sticker/")
-def generate_sticker(req: StickerRequest):
-    try:
-
-        # 스티커 생성 (동기 호출처럼 사용)
-        result = asyncio.run(generate_sticker_from_prompt(req.prompt))  # 또는 내부 비동기 제거 시 그냥 함수 호출
-        image_url = result["image_url"]
-        image_filename = result["image_filename"]
-
-        # S3 업로드
-        s3_url = upload_image_to_s3(
-            image_url=image_url,
-            bucket_name="bookeating",
-            s3_key=f"sticker/{image_filename}"
-        )
-
-        return {
-            "status": "success",
-            "s3_url": s3_url
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"스티커 생성 실패: {str(e)}")
-
-@app.post("/test/")
-async def test():
-
-    formattedStory = [
-        "story", "test",
-        "illustUrl", "test"
-    ]
-    
-    try:
-        user_content = [{"type": "text", "text": scene} for scene in formattedStory]
-
-        response = client.responses.parse(
-        model="gpt-4o-2024-11-20",
-        input=[
-            {"role": "developer", "content": "You are responsible for refining an array of separated fairytale scenes into a smoothly connected story. The input and output must remain in array format, and both the order and number of scenes must be preserved."+
-            "Improve the flow and emotional continuity by adjusting expressions or adding transitional phrases within each scene. Keep the core meaning intact, but feel free to rephrase naturally."+
-            "Each scene must be written in Korean and limited to 300 characters or fewer.  Do not include any extra explanations or formatting."},
-            {"role": "user", "content": user_content}
-        ],
-        text_format=renderOutput
-        )
-        
-        return {"status": "success", "s3_url": response.output_parsed}
-    
-
-    except Exception as e:
-        raise HTTPException(status_code=e.status_code, detail=f"생성 실패: {e}")
-    
 @app.get("/stickers")
 def get_stickers():
     return sticker_url
 
 
+from bareunpy import Corrector
+
+@app.post("/test/")
+async def test(text:str=Body(...)):
+
+
+    # Corrector 초기화
+    API_KEY = "koba-KYI722Q-4BAUJ6I-RGQOEQA-XVGL3LA"  # 본인의 API 키를 입력하세요
+    HOST = "localhost"             # 로컬 서버를 사용하는 경우
+    PORT = 5656                    # 포트 번호, 도커로 설치한 경우 5757로 호출
+    corrector = Corrector(apikey=API_KEY)
+
+    # 단일 문장 교정 테스트
+    print("=== 단일 문장 교정 ===")
+    single_sentence = "줄기가 얇아서 시들을 것 같은 꽃에물을 주었더니 고은 꽃이 피었다."
+    response = corrector.correct_error(content=single_sentence, auto_split=True)
+    print("원문:", response.origin)
+    print("교정문:", response.revised)
+
+    # 여러 문장 교정 테스트
+    print("\n=== 여러 문장 교정 ===")
+    multiple_sentences = [
+        "줄기가 얇아서 시들을 것 같은 꽃에물을 주었더니 고은 꽃이 피었다.",
+        "오늘은 철이네서 알타리무 다듬던데."
+    ]
+
+    responses = corrector.correct_error_list(contents=multiple_sentences, auto_split=True)
+    for i, res in enumerate(responses):
+        print(f"\n문장 {i + 1}:")
+        print("원문:", res.origin)
+        print("교정문:", res.revised)
+
+    return "success"
+
 @app.get("/")
 def start():
-    return {"Hello":"World!"}
-
+    return None
+    
 # if __name__ == "__main__":
 #     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+
+
