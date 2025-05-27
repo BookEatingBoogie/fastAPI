@@ -104,6 +104,14 @@ async def getIntro(introRequest: introRequest):
         STORY.append(intro.intro)
         FILE_NAME = getFileName(introRequest.imgUrl)
 
+        # 삽화 프롬프트 저장
+        ILLUST_PROMPT.append(imgPrompt)
+
+        # 도입부 삽화는 서버 0번으로 고정
+        server_url = get_server_by_index(0)
+        result = generate_image_from_prompt(FILE_NAME, imgPrompt, server_url)
+        print(result)
+        
         # 스티커 생성 호출
         asyncio.create_task(call_sticker_generator(intro.options))
 
@@ -112,11 +120,7 @@ async def getIntro(introRequest: introRequest):
         CHAR_LOOK = formatCharLook(introRequest.charLook, intro.charLook)
         print(CHAR_LOOK)
 
-        # 삽화 프롬프트 저장
-        ILLUST_PROMPT.append(imgPrompt)
-        result = generate_image_from_prompt(FILE_NAME, imgPrompt)
         
-        print(result)
 
         RESPONSE_ID = responseId
 
@@ -125,14 +129,21 @@ async def getIntro(introRequest: introRequest):
         tasks[requestId] = {}
 
         tasks[requestId][1] = {}
-        for choice in intro.options:
+
+        # 선택지별로 서버 분산 (선택지 1 -> 서버 0, 선택지 2 -> 서버 1, 선택지 3 -> 서버 2)
+        for idx, choice in enumerate(intro.options):
+            server_url = get_server_by_index(idx)
             t = asyncio.create_task(
-                handle_generate_scene(requestId, 1, FILE_NAME, choice, introRequest.charName, CHAR_LOOK, RESPONSE_ID)
+                handle_generate_scene(
+                    requestId, 1, FILE_NAME, choice,
+                    introRequest.charName, CHAR_LOOK,
+                    RESPONSE_ID, server_url
+                )
             )
             tasks[requestId][1][choice] = t
-            
+
         print(f"scene 1 생성 시작. {t}")
-        # 삽화 이미지 업로드    
+
         image_url = result["image_url"]
         filename = result["image_filename"]
         s3_url = upload_image_to_s3(
@@ -153,12 +164,11 @@ async def getIntro(introRequest: introRequest):
             "charLook": intro.charLook,
             "s3_url": s3_url,
         }
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"동화 : 도입부 생성 실패: {e}")
 
 
-# 동화 중심부 생성
 @app.post("/generate/content/")
 async def getContent(contentRequest: contentRequest):
 
@@ -171,7 +181,9 @@ async def getContent(contentRequest: contentRequest):
 
     # 비동기로 동화가 생성되지 않았을 경우, 실시간으로 동화 뒷내용 생성.
     if requestId not in tasks or sceneIdx not in tasks[requestId]:
-        result = await getContentNow(contentRequest.choice, contentRequest.charName, RESPONSE_ID, FILE_NAME, contentRequest.page)
+        # 기본 서버 지정 (선택지 index가 없으므로 0번 서버로 임시 처리)
+        server_url = get_server_by_index(0)
+        result = await getContentNow(contentRequest.choice, contentRequest.charName, RESPONSE_ID, FILE_NAME, contentRequest.page, CHAR_LOOK, server_url)
     else:
         # 비동기로 생성된 동화 장면 가져오기
         scene_tasks = tasks[requestId][sceneIdx]
@@ -202,14 +214,15 @@ async def getContent(contentRequest: contentRequest):
         RESPONSE_ID = result["responseId"]
 
         tasks[requestId][sceneIdx+1] = {}
-        for choice in result["choices"]:
+        for idx, choice in enumerate(result["choices"]):
+            server_url = get_server_by_index(idx)  # ✅ 선택지 인덱스로 서버 분산
             if sceneIdx == 5:
                 t = asyncio.create_task(
-                    handle_generate_ending(requestId, FILE_NAME, choice, contentRequest.charName, CHAR_LOOK, RESPONSE_ID)
+                    handle_generate_ending(requestId, FILE_NAME, choice, contentRequest.charName, CHAR_LOOK, RESPONSE_ID, server_url)
                 )
             else:
                 t = asyncio.create_task(
-                    handle_generate_scene(requestId, sceneIdx+1, FILE_NAME, choice, contentRequest.charName, CHAR_LOOK, RESPONSE_ID)
+                    handle_generate_scene(requestId, sceneIdx+1, FILE_NAME, choice, contentRequest.charName, CHAR_LOOK, RESPONSE_ID, server_url)
                 )
             tasks[requestId][sceneIdx+1][choice] = t
             print(f"scene {sceneIdx+1} 생성 시작.")
@@ -226,6 +239,7 @@ async def getContent(contentRequest: contentRequest):
         }
 
 
+
 # 전체 동화를 정제. 최종 동화 반환.
 @app.post("/generate/story/")
 async def getStory(endingRequest: endingRequest):
@@ -238,7 +252,8 @@ async def getStory(endingRequest: endingRequest):
     sceneIdx = endingRequest.page
 
     if requestId not in tasks or sceneIdx not in tasks[requestId]:
-        result = await getEndingNow(endingRequest.choice, endingRequest.charName, RESPONSE_ID)
+        server_url = get_server_by_index(0)  # ✅ 기본 서버로 처리
+        result = await getEndingNow(endingRequest.choice, endingRequest.charName, RESPONSE_ID, FILE_NAME, CHAR_LOOK, server_url)
     else:
         scene_tasks = tasks[requestId][sceneIdx][endingRequest.choice]
 
@@ -252,15 +267,11 @@ async def getStory(endingRequest: endingRequest):
         ILLUST_URL.append(result["s3_url"])
     
     # 동화 전체 정제 -> 삽화 재생성 기다려서 이미지 url과 함께 페이지별로 엮어서 json 파일 생성. -> 파일 이름은 storyId.json -> 파일 저장 위치는 s3.
-   
     render_result, high_illusts = await asyncio.gather(
         generateStory(STORY),
         generate_illust_high(FILE_NAME, ILLUST_PROMPT, endingRequest.storyId)
     )
 
-    # rendering = check_and_edit_story(render_result.paragraphs)
-
-    
     formattedStory = formatStory(render_result.paragraphs, high_illusts)
 
     # 파일 이름은 storyId.json -> 파일 저장 위치는 s3.
@@ -277,44 +288,19 @@ async def getStory(endingRequest: endingRequest):
 
     return s3_url
 
+
 @app.get("/stickers")
 def get_stickers():
     return sticker_url
 
 
-from bareunpy import Corrector
-
 @app.post("/test/")
-async def test(text:str=Body(...)):
+async def test(choice="야옹이"):
 
+    # 영한 변환 되는지 확인
+    trans = await process_choices(choice)
 
-    # Corrector 초기화
-    API_KEY = "koba-KYI722Q-4BAUJ6I-RGQOEQA-XVGL3LA"  # 본인의 API 키를 입력하세요
-    HOST = "localhost"             # 로컬 서버를 사용하는 경우
-    PORT = 5656                    # 포트 번호, 도커로 설치한 경우 5757로 호출
-    corrector = Corrector(apikey=API_KEY)
-
-    # 단일 문장 교정 테스트
-    print("=== 단일 문장 교정 ===")
-    single_sentence = "줄기가 얇아서 시들을 것 같은 꽃에물을 주었더니 고은 꽃이 피었다."
-    response = corrector.correct_error(content=single_sentence, auto_split=True)
-    print("원문:", response.origin)
-    print("교정문:", response.revised)
-
-    # 여러 문장 교정 테스트
-    print("\n=== 여러 문장 교정 ===")
-    multiple_sentences = [
-        "줄기가 얇아서 시들을 것 같은 꽃에물을 주었더니 고은 꽃이 피었다.",
-        "오늘은 철이네서 알타리무 다듬던데."
-    ]
-
-    responses = corrector.correct_error_list(contents=multiple_sentences, auto_split=True)
-    for i, res in enumerate(responses):
-        print(f"\n문장 {i + 1}:")
-        print("원문:", res.origin)
-        print("교정문:", res.revised)
-
-    return "success"
+    return trans
 
 @app.get("/")
 def start():

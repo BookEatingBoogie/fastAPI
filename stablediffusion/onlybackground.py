@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 #  ComfyUI 환경 변수 설정
-COMFYUI_URL = "https://jewellery-dubai-placing-poems.trycloudflare.com"
+COMFYUI_URL = "https://additions-both-described-intended.trycloudflare.com"
 WORKFLOW_PATH = "background.json"
 
 def get_workflow():

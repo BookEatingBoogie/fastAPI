@@ -31,7 +31,7 @@
   },
   "4": {
     "inputs": {
-      "ckpt_name": "toonyou_beta6.safetensors"
+      "ckpt_name": "darkSushiMixMix_225D.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": {
