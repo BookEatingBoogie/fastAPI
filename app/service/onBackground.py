@@ -20,15 +20,18 @@ sticker_url = []
 def get_illustration_result(file_name, prompt, charLook, server_url):
     loop = asyncio.get_running_loop()
 
-    if prompt.startswith("person,"):
+    lower_prompt = prompt.lower()
+
+    if lower_prompt.startswith("person,"):
         refined_prompt = prompt.replace("person, ", "", 1) + " " + charLook.lower()
         return loop.run_in_executor(None, generate_image_from_prompt, file_name, refined_prompt, server_url)
 
-    elif prompt.startswith("background,"):
+    elif lower_prompt.startswith("background,"):
         return loop.run_in_executor(None, generate_background_from_prompt, file_name, prompt, server_url)
 
     else:
         raise ValueError(f"Invalid prompt format: {prompt}")
+
 
 async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str, choice: str, charName: str, charLook: str, responseId: str, server_url: str):
     loop = asyncio.get_running_loop()
@@ -60,6 +63,7 @@ async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str,
         "illust_prompt": prompt,
         "responseId": responseId
     }
+
 
 async def handle_generate_ending(request_id: str, file_name: str, choice: str, charName: str, charLook: str, server_url: str):
     loop = asyncio.get_running_loop()
