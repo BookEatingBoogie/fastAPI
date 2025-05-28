@@ -16,21 +16,19 @@ from stablediffusion.comfyUI_servers import get_server_by_index
 
 sticker_url = []
 
-# 삽화/배경 프롬프트 기반 이미지 생성 분기 처리 함수
-def get_illustration_result(file_name, prompt, charLook, server_url):
-    loop = asyncio.get_running_loop()
-
+async def get_illustration_result(file_name, prompt, charLook, server_url):
     lower_prompt = prompt.lower()
 
     if "person" in lower_prompt:
         refined_prompt = prompt + " " + charLook.lower()
-        return loop.run_in_executor(None, lambda: generate_image_from_prompt(file_name, refined_prompt, server_url))
+        return generate_image_from_prompt(file_name, refined_prompt, server_url)  # ✅ await 제거
 
     elif "background" in lower_prompt:
-        return loop.run_in_executor(None, lambda: generate_background_from_prompt(file_name, prompt, server_url))
+        return await generate_background_from_prompt(file_name, prompt, server_url)  # ✅ 여긴 비동기니까 await 유지
 
     else:
-        return loop.run_in_executor(None, lambda: generate_image_from_prompt(file_name, refined_prompt, server_url))
+        refined_prompt = prompt + " " + charLook.lower()
+        return generate_image_from_prompt(file_name, refined_prompt, server_url)  # ✅ await 제거
 
 
 
@@ -164,11 +162,11 @@ async def call_sticker_generator(choices: list[str]):
             print("[⚠️ 경고] 프롬프트에 % 기호가 들어있음:", sticker_prompt)
 
         asyncio.get_running_loop().create_task(
-            generate_sticker_and_store(sticker_prompt, server_url)
+            generate_sticker_and_store(sticker_prompt, server_url, idx)
         )
 
 
-async def generate_sticker_and_store(prompt: str, server_url: str):
+async def generate_sticker_and_store(prompt: str, server_url: str, idx: int):
     try:
         result = await generate_sticker_from_prompt(prompt, server_url)
         image_url = result["image_url"]
@@ -177,7 +175,7 @@ async def generate_sticker_and_store(prompt: str, server_url: str):
         s3_url = upload_image_to_s3(
             image_url=image_url,
             bucket_name="bookeating",
-            s3_key=f"sticker/{image_filename}"
+            s3_key=f"sticker/{idx}/{image_filename}"
         )
         sticker_url.append(s3_url)
     except Exception as e:

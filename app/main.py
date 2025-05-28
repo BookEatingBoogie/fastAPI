@@ -108,8 +108,8 @@ async def getIntro(introRequest: introRequest):
 
         # 스티커 생성 호출
         asyncio.create_task(call_sticker_generator(intro.options))
-
-        imgPrompt = createStoryImage(intro.intro)
+        
+        imgPrompt = createBackgroundImage(intro.intro)
 
         CHAR_LOOK = formatCharLook(introRequest.charLook, intro.charLook)
         print(CHAR_LOOK)
@@ -234,6 +234,7 @@ async def getContent(contentRequest: contentRequest):
 
         # 스티커 생성 호출
         asyncio.create_task(call_sticker_generator(result["choices"]))
+        
 
         return {
             "requestId": requestId,

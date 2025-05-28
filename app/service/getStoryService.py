@@ -11,28 +11,76 @@ from app.service.storyFormating import formatStory
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+story_system_prompt = f"""You are an assistant that writes fairy tales for young children between the ages of 7 and 9. Your stories should be easy to understand, emotionally warm, and imaginative. Always write in a friendly, age-appropriate tone. Do not use complex vocabulary or abstract ideas. Vary sentence structures and opening styles to avoid repetition.
+**Important:**
+- Every output must vary in pacing, tone.
+- Use different seeds and randomness to avoid repetition.  
+- If it's the same(related) story, the story should include coherent message. 
+- Ensure that each key action (like helping, choosing, discovering) is described completely before the character transitions to a new scene or movement.
+- Never skip or compress multiple story actions into one sentence.
+- **List up a lot of story intros, and choose one randomly, do not always choose the template-like story.**
+- **List up at least 100 ending sentences of story, and choose one randomly, do not always choose the template-like story.**
+- **List up at leat 100 questions, and choose one randomly related to the ending sentences, do not always choose the same question. Ask about '누구', '무엇', '어디', '어떤 것', '어떻게'.
+- **List up at least 100 concrete visual nouns(e.g. animals, nature thing, magical objects, ordinary things, character gear, person, etc) that is child-friendly(easy for kindergartener), and choose variety words(except not related word to story at all) for making "options."**
+- Each option must be a **single noun without modifiers** — do not include adjectives, sizes, colors, or any descriptions (e.g., just "상자", not "작은 상자" or "파란 상자").
+- Avoid aggressive words(options) related to the story and question.
+- Story, question, options cannot be repeated across the outputs.
+"""
+
 
 
 # 동화 도입부 생성 gpt 호출 - 최초 동화 생성 시 호출
 def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
   
   # 요청 프롬프트
-  storyPrompt = f"""Tell a story beginning in {introRequest.place},
-  inspired by {introRequest.genre},
-  following a main character named {introRequest.charName},
-  allowing for unexpected developments.
+  storyPrompt = f"""Tell a story beginning in {introRequest.place}, inspired by {introRequest.genre}, 
+following a main character named {introRequest.charName}, allowing for unexpected developments.
 
-  Make sure the story intro ends with the character experiencing or discovering something curious or unexpected.  
-  This could be: entering a hidden place (e.g. cave, door, portal), noticing a strange sound, seeing a glowing object, or meeting someone unusual.  
-  Use a variety of endings across outputs so the story does not always end the same way.
+Start by introducing the setting with sensory details (what can be seen, heard, felt, or smelled). 
+If the genre is fantasy, sci-fi, or magical realism, briefly hint at the world's rules or atmosphere.
 
-  Then, based on this story opening, return your answer in a JSON object with 4 fields:
-  1. intro (Korean): Write the full intro in **Korean only** (around 300 characters). Use simple, child-friendly language. End with the main character stepping into or discovering something mysterious.
-  2. question (Korean): Ask one narrative question in **Korean only**, using easy vocabulary suitable for children aged 7–9. The question must clearly continue from the intro and ask what the character sees, chooses, or interacts with next. Avoid repeated questions across outputs.
-  3. options (Korean): Provide 3 possible answers in **Korean only**, each as one word concrete object or animal (e.g. "깃털", "다람쥐", "상자"). These should directly relate to the question. Avoid abstract ideas, verbs, or repeated items across outputs. Related to the problem situation at the end of the story.
-  4. charLook (English): Describe the character’s outfit in one concise sentence in **English only**. Focus only on clothing and accessories (e.g. top, bottom, jewelry, shoes), with no mention of the character’s name or other traits. Include the color of the outfit. Match the style and tone to the story’s setting and mood (e.g. fantasy ocean world, magical forest, etc). Use evocative but clear language suitable for use in image generation prompts.
+Then describe the character’s daily life or a curiosity that fits the setting. 
+Write each sentence clearly and naturally, using simple child-friendly Korean. 
+Avoid compressing multiple ideas into one sentence—break into short, natural segments.
 
-  Important: Respond with only the raw JSON object using these 4 fields. Do not include explanations, formatting symbols, or extra text.
+End the scene with the character noticing or discovering something surprising, mysterious, or story-advancing. 
+This final moment must be clearly related to the follow-up question.
+
+After the story, write a question in Korean that naturally continues from the final sentence. 
+The question must be **continuous** to what just happened:
+- Make questions that can be answered by concrete, visual nouns, connected to the story.
+- If the final sentence is about a **decision**, **movement**, or **conflict**, ask what the character **should do** or **chooses to do**.
+- Ask new questions using easy, various vocabularies, related to the ending sentence, not template-like.
+- Do **not** repeat the same type of question across outputs.
+
+Then return your answer in the following JSON format (in Korean only):
+
+1. "intro" (Korean): 
+- A full Korean story intro (about 350 characters), ending in a moment that implies a next action or discovery. 
+- Use polite, natural sentence endings like -요 / -ㅂ니다 / -지요.
+- Avoid repetition across stories.
+
+2. "question" (Korean): 
+- Write a narrative-style question in child-friendly Korean that flows directly from the ending of the intro.
+- Avoid template-style wording.
+
+3. "options" (Korean): 
+- Always provide 3 **concrete visual nouns** (e.g. 동물, 물건, 자연물, 마법 도구, 주인공의 장비 등) **unless** the question clearly is about a decision, in which case return 3 **-기/-하기** action verbs.
+- Do not always include words that is template-like (e.g. 조개, 진주,상자, etc)
+- All options must be easily visualizable and suitable for a sticker illustration.
+- Never return abstract concepts, emotions, or non-visual terms.
+
+4. "charLook" (English): Describe the character’s outfit and accessories using comma-separated visual fragments in simple English (not a sentence).
+- Include only visual elements like clothing, accessories, shoes, or gear.
+- Use color or design if needed, but do not add any emphasis, symbols, or weighting (e.g. no double parentheses).
+- Keep the description brief—around 10 tokens total.
+
+Important constraints:
+- Avoid repeating events, moods, endings, or wordings across stories.
+- Vary the structure, tone, and imagery for each new output.
+- Make sure the question and all options directly reflect the story’s final moment.
+- Write short, natural sentences where needed along story, and question
+- Do not include any extra explanation or formatting in the output. Return only the raw JSON object.
   """
   
   print(storyPrompt)
@@ -42,12 +90,12 @@ def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
     response = client.responses.parse(
       model="gpt-4.1-2025-04-14",
       input=[      
-        {"role": "developer", "content": "You are an assistant that writes fairy tales for young children between the ages of 7 and 9. Your stories should be easy to understand, emotionally warm, and imaginative. Always write in a friendly, age-appropriate tone. Do not use complex vocabulary or abstract ideas. Vary sentence structures and opening styles to avoid repetition."},
+        {"role": "developer", "content": story_system_prompt},
         {"role": "user", "content": storyPrompt}
         ],
       text_format=introOutput,
-      temperature=0.8,
-      top_p=0.7
+      temperature=1.2,
+      top_p=0.8
     )
 
     # 현재 응답 id 저장
@@ -64,25 +112,38 @@ def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
 def generateContent(choice, charName, responseId): # select: 질문 선택지, charName: 주인공 이름
   
   # 요청 프롬프트
-  storyPrompt = f"""The user has selected "{choice}" as their answer to the previous question.
-  Please continue the story in Korean, writing the next scene.
-  This scene should naturally follow the previous events, and reflect the user’s choice within the flow of the narrative.
-  It should also include the actions of the main character, {charName}, and their surrounding situation.
+  storyPrompt = f"""Continue the story of with {choice} chosen by the {charName} in the previous scene.
 
-  Make sure the scene ends with the character experiencing or discovering something curious or unexpected.  
-  This could be: entering a hidden place (e.g. cave, door, portal), noticing a strange sound, seeing a glowing object, or meeting someone unusual.  
-  Use a variety of endings across outputs so the story does not always end the same way.
+Write the **middle scene** in Korean using short, child-friendly sentences.
 
-  Avoid flat or generic scenes such as “즐거운 시간을 보냈습니다.” or “즐거운 하루를 보냈습니다.” Include some form of tension, surprise, discovery, or a decision the character has to make.
+Each event must be fully completed before the character moves or acts again.  
+Do not compress or skip over steps. If something is found, it must be reacted to before progressing.  
+End with a clear moment where the character must choose or respond to something new.
 
-  The question must not simply summarize or restate what happened in the story. Instead, it should help lead to a meaningful next event or choice.
+Then write:
+1. "story" (Korean):
+- A full Korean story follows the previous scene (about 350 characters), ending in a moment that implies a next action or discovery. 
+- Use polite, natural sentence endings like -요 / -ㅂ니다 / -지요.
+- Avoid repetition across stories.
 
-  Then, based on this story opening:
-  1. story : Write the story by continuing naturally from the previous events. (about 300 characters). Use simple, child-friendly language. End with the main character stepping into or discovering something mysterious.
-  2. question (Korean): Ask one narrative question (randomly choose about where, who, what, or why) in **Korean only**, using easy vocabulary suitable for children aged 7–9. The question must clearly continue from the intro and ask what the character sees, chooses, or interacts with next. Avoid repeated questions across outputs.
-  3. options (Korean): Provide 3 possible answers in **Korean only**, each as one word concrete object or animal (e.g. "깃털", "다람쥐", "상자"). These should directly relate to the question. Avoid abstract ideas, verbs, or repeated items across outputs. Related to the problem situation at the end of the story.
+2. "question" (Korean): 
+- Write a narrative-style question in child-friendly Korean that flows directly from the ending of the intro.
+- Avoid template-style wording.
+- By default, ask question that can answer in concrete visual noun (e.g. animals, objects, natural things, magical items, character gear).
+- Only if the character needs to make **decision** or **reaction**, ask question about what to do that can return **3 verbs** in "-기" or "-하기" form instead
 
-  Important: Respond using the fields and languages exactly as instructed. Do not include explanations, formatting symbols, or extra text. Respond in Korean only.
+3. "options" (Korean): 
+- Always provide 3 **concrete visual nouns** (e.g. 동물, 물건, 자연물, 마법 도구, 주인공의 장비 등) **unless** the question clearly needs to act, in which case return 3 **-기/-하기** action verbs.
+- Do not always include words that is template-like (e.g. 조개, 진주,상자, 해마 etc)
+- All options must be easily visualizable and suitable for a sticker illustration.
+- Never return abstract concepts, emotions, or non-visual terms.
+
+Important constraints:
+- Avoid repeating events, moods, endings, or wordings across stories.
+- Vary the structure, tone, and imagery for each new output.
+- Make sure the question and all options directly reflect the story’s final moment.
+- Use short, natural sentences where necessary for the story and questions.
+- Do not include any extra explanation or formatting in the output. Return only the raw JSON object.
   """
 
   print(responseId)
@@ -93,12 +154,12 @@ def generateContent(choice, charName, responseId): # select: 질문 선택지, c
       model="gpt-4.1-2025-04-14",
       previous_response_id=responseId,
       input=[
-        {"role": "developer", "content": "You are an assistant that writes fairy tales for young children between the ages of 7 and 9. Your stories should be easy to understand, emotionally warm, and imaginative. Always write in a friendly, age-appropriate tone. Do not use complex vocabulary or abstract ideas. Vary sentence structures and opening styles to avoid repetition."},
+        {"role": "developer", "content": story_system_prompt},
         {"role": "user", "content": storyPrompt}
       ],
       text_format=contentOutput,
-      temperature=0.8,
-      top_p=0.7
+      temperature=1.2,
+      top_p=0.8
     )
 
     # 현재 응답 id 저장
@@ -110,34 +171,43 @@ def generateContent(choice, charName, responseId): # select: 질문 선택지, c
   except Exception as e:
     raise e
 
-
 # 동화 내용 생성 gpt 호출 - 결말 생성을 위한 질문 생성 프롬프트트
 def generateFinalQuestion(choice, charName, responseId): # select: 질문 선택지, charName: 주인공 이름
   
   # 요청 프롬프트
-  storyPrompt = f"""The user has selected {choice} as their answer to the previous question.
+  storyPrompt = f"""Continue the story of with {choice} chosen by the {charName} in the previous scene.
 
-  Please continue the story in Korean only, writing the next scene.
+  Write the **climax scene** in Korean using short, child-friendly sentences.
 
-  This scene must:
-  - Clearly reflect the user's selected choice within the narrative flow.
-  - Focus on the main character {charName}'s actions and emotions.
+  Each event must be fully completed before the character moves or acts again.  
+  Do not compress or skip over steps. If something is found, it must be reacted to before progressing.  
+  End with a clear moment where the character must choose or respond to something new.
+
+  Then write:
+  1. "story" (Korean):
+  - A full Korean story follows the previous scene (about 350 characters), ending in a moment that implies a next action or discovery. 
+  - Use polite, natural sentence endings like -요 / -ㅂ니다 / -지요.
+  - Avoid repetition across stories.
   - Lead to a climax or problem situation — something unexpected, tense, or mysterious must happen (e.g. a magical trap, a sudden decision, a strange character appears, a path splits).
-  - End with a problem that the character must solve, escape from, or react to.
 
-  After the story, write a narrative question that:
-  - Directly relates to the problem situation at the end.
-  - Helps the reader make a meaningful choice that could solve or change the outcome.
-  - Avoids summarizing what just happened.
-  - Uses simple vocabulary appropriate for children aged 7–9.
+  2. "question" (Korean): 
+  - Write a narrative-style question in child-friendly Korean that flows directly from the ending of the intro.
+  - Avoid template-style wording.
+  - By default, ask question that can answer in concrete visual noun (e.g. animals, objects, natural things, magical items, character gear).
+  - Only if the character needs to make **decision** or **reaction**, ask question about what to do that can return **3 verbs** in "-기" or "-하기" form instead
 
-  Then, provide 3 concrete answer options in Korean only, each as one word (e.g. "망치", "리본", "토끼") that:
-  - Could reasonably help solve the problem or affect what happens next.
-  - Related to the problem situation at the end of the story.
-  - Are not abstract ideas or actions.
-  - Are varied across outputs.
-
-  Important: Respond using the fields and languages exactly as instructed. Do not include explanations, formatting symbols, or extra text. Respond in Korean only.
+  3. "options" (Korean): 
+  - Always provide 3 **concrete visual nouns** (e.g. 동물, 물건, 자연물, 마법 도구, 주인공의 장비 등) **unless** the question clearly needs to act, in which case return 3 **-기/-하기** action verbs.
+  - Do not always include words that is template-like (e.g. 조개, 진주,상자, 해마 etc)
+  - All options must be easily visualizable and suitable for a sticker illustration.
+  - Never return abstract concepts, emotions, or non-visual terms.
+  
+  Important constraints:
+  - Avoid repeating events, moods, endings, or wordings across stories.
+  - Vary the structure, tone, and imagery for each new output.
+  - Make sure the question and all options directly reflect the story’s final moment.
+  - Use short, natural sentences where necessary for the story and questions.
+  - Do not include any extra explanation or formatting in the output. Return only the raw JSON object.
   """
   print(responseId)
 
@@ -147,12 +217,12 @@ def generateFinalQuestion(choice, charName, responseId): # select: 질문 선택
       model="gpt-4.1-2025-04-14",
       previous_response_id=responseId,
       input=[
-        {"role": "developer", "content": "You are an assistant that writes fairy tales for young children between the ages of 7 and 9. Your stories should be easy to understand, emotionally warm, and imaginative. Always write in a friendly, age-appropriate tone. Do not use complex vocabulary or abstract ideas. Vary sentence structures and opening styles to avoid repetition."},
+        {"role": "developer", "content": story_system_prompt},
         {"role": "user", "content": storyPrompt}
       ],
       text_format=contentOutput,
-      temperature=0.8,
-      top_p=0.7
+      temperature=1.2,
+      top_p=0.8
     )
 
     # 현재 응답 id 저장
@@ -183,12 +253,12 @@ def generateEnding(choice, charName, responseId):
       model="gpt-4.1-2025-04-14",
       previous_response_id=responseId,
       input=[
-        {"role": "developer", "content": "You are an assistant that writes fairy tales for young children between the ages of 7 and 9. Your stories should be easy to understand, emotionally warm, and imaginative. Always write in a friendly, age-appropriate tone. Do not use complex vocabulary or abstract ideas. Vary sentence structures and opening styles to avoid repetition."},
+        {"role": "developer", "content": story_system_prompt},
         {"role": "user", "content": storyPrompt}
       ],
       text_format=endingOutput,
-      temperature=0.75,
-      top_p=0.7
+      temperature=1.2,
+      top_p=0.8
     )
 
     print(response.output_parsed)
@@ -203,13 +273,30 @@ async def generateStory(story):
 
   user_content = [{"type": "input_text", "text": scene} for scene in story]
 
+  system_prompt = f"""You are responsible for refining an array of separated fairytale scenes into a smoothly connected story.
+
+Each element in the array is a scene written in Korean.  
+You must improve the flow, clarity, and tone consistency **without changing the order or count** of the scenes.  
+The input and output must remain in **array format**.
+
+Your goal is to:
+- Fix incomplete or awkward sentences by ensuring proper grammar and natural structure  
+- Add missing logical or emotional transitions **within each scene** if needed  
+- Rephrase for a smooth, unified tone across the entire story  
+- Preserve the core meaning of each scene while improving readability and cohesion  
+- Ensure the overall story feels connected and emotionally engaging, with a clear buildup and resolution  
+- Do not add new events or change what is happening in the scene — only smooth and clarify it
+
+Each scene must be written in **natural, child-friendly Korean**,  
+limited to **300 characters or fewer**.  
+Do not include any extra explanations, notes, or formatting in the output — return **only the final array of improved scenes**.
+"""
+
   try:
     response = client.responses.parse(
       model="gpt-4.1-2025-04-14",
       input=[
-        {"role": "developer", "content": "You are responsible for refining an array of separated fairytale scenes into a smoothly connected story. The input and output must remain in array format, and both the order and number of scenes must be preserved."+
-        "Improve the flow and emotional continuity by adjusting expressions or adding transitional phrases within each scene. Keep the core meaning intact, but feel free to rephrase naturally."+
-        "Each scene must be written in Korean and limited to 300 characters or fewer.  Do not include any extra explanations or formatting."},
+        {"role": "developer", "content": system_prompt},
         {"role": "user", "content": user_content}
       ],
       text_format=renderOutput,

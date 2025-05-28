@@ -47,6 +47,10 @@ async def generate_background_from_prompt(file_name: str, prompt: str, server_ur
         first_output = list(outputs.values())[0]
         image_filename = first_output["images"][0]["filename"]
         image_url = f"{server_url}/view?filename={image_filename}&type=output"
+        print("[DEBUG] outputs:", outputs)
+        print("[DEBUG] first_output:", first_output)
+        print("[DEBUG] images:", first_output.get("images"))
+
 
         return {
             "image_url": image_url,

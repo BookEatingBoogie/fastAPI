@@ -17,6 +17,17 @@ def createCharacter(charImg):
 
   return response.output_text
 
+def createBackgroundImage(scene):
+
+  response = client.responses.create(
+    model="gpt-4.1-2025-04-14",
+    input=[
+      {"role":"developer", "content":"You are an assistant that generates short, vivid scene descriptions in a soft anime or fairytale style. You will receive a short scene of story, written in Korean. Write in simple, clear English. Use easy, usable words. Limit the output to 100 characters (including commas and spaces). Use fragment-style phrases separated by commas. No full sentences. Describe only the background: environment, objects, lighting, textures, and atmosphere. Return only the prompt. No explanations or formatting."},
+      {"role":"user", "content": scene}
+    ]
+  )
+
+  return response.output_text
 
 # 동화 삽화 생성 프롬프트 요청
 def createStoryImage(scene):
@@ -40,4 +51,3 @@ def createStoryImage(scene):
   print(response.output_text)
 
   return response.output_text
-

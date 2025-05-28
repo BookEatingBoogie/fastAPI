@@ -26,8 +26,7 @@
   },
   "7": {
     "inputs": {
-      "text": "nsfw, nude, naked, sexy, suggestive, bare shoulders, transparent clothing, text, signature, watermark, low quality, blurry, deformed, duplicate, two objects, multiple objects, background, circular shape, round, frame, border, monochrome, grayscale, muted colors, desaturated, dull colors, boring colors, flat colors"
-,
+      "text": "(multiple objects), blurry, watermark, text, extra parts, decoration, shadow, floor, background elements, clutter, distortion, duplicate",
       "clip": [
         "4",
         1
@@ -37,7 +36,7 @@
   },
   "3": {
     "inputs": {
-      "seed": 608548260914332,
+      "seed": -1,
       "steps": 30,
       "cfg": 6.5,
       "sampler_name": "ddpm",
