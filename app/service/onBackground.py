@@ -22,15 +22,16 @@ def get_illustration_result(file_name, prompt, charLook, server_url):
 
     lower_prompt = prompt.lower()
 
-    if lower_prompt.startswith("person,"):
-        refined_prompt = prompt.replace("person, ", "", 1) + " " + charLook.lower()
-        return loop.run_in_executor(None, generate_image_from_prompt, file_name, refined_prompt, server_url)
+    if "person" in lower_prompt:
+        refined_prompt = prompt + " " + charLook.lower()
+        return loop.run_in_executor(None, lambda: generate_image_from_prompt(file_name, refined_prompt, server_url))
 
-    elif lower_prompt.startswith("background,"):
-        return loop.run_in_executor(None, generate_background_from_prompt, file_name, prompt, server_url)
+    elif "background" in lower_prompt:
+        return loop.run_in_executor(None, lambda: generate_background_from_prompt(file_name, prompt, server_url))
 
     else:
-        raise ValueError(f"Invalid prompt format: {prompt}")
+        return loop.run_in_executor(None, lambda: generate_image_from_prompt(file_name, refined_prompt, server_url))
+
 
 
 async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str, choice: str, charName: str, charLook: str, responseId: str, server_url: str):
@@ -146,12 +147,26 @@ async def get_english_choice(choices: list[str]):
     return object_or_not
 
 async def call_sticker_generator(choices: list[str]):
+    print("[DEBUG] call_sticker_generator 실행됨! choices:", choices)
+
     object_or_not = await get_english_choice(choices)
+    print("[DEBUG] 번역 결과:", object_or_not)
 
     for idx, word in enumerate(object_or_not):
         server_url = get_server_by_index(idx)
         sticker_prompt = f"a {word}, centered, isolated on a pure white background, full view, realistic lighting, no shadow"
-        asyncio.get_running_loop().create_task(generate_sticker_and_store(sticker_prompt, server_url))
+        sticker_prompt = sticker_prompt.replace("%", " percent")
+        
+
+        # ✅ 여기서 프롬프트 내용 확인
+        print(f"[DEBUG] sticker_prompt: {sticker_prompt}")
+        if "%" in sticker_prompt:
+            print("[⚠️ 경고] 프롬프트에 % 기호가 들어있음:", sticker_prompt)
+
+        asyncio.get_running_loop().create_task(
+            generate_sticker_and_store(sticker_prompt, server_url)
+        )
+
 
 async def generate_sticker_and_store(prompt: str, server_url: str):
     try:

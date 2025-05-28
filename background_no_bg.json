@@ -1,7 +1,7 @@
 {
   "4": {
     "inputs": {
-      "ckpt_name": "darkSushiMixMix_225D.safetensors",
+      "ckpt_name": "disneyPixarCartoon_v10.safetensors",
       "load_on_start": false
     },
     "class_type": "CheckpointLoaderSimple"
@@ -26,7 +26,8 @@
   },
   "7": {
     "inputs": {
-      "text": "disfigured, deformed, ugly",
+      "text": "nsfw, nude, naked, sexy, suggestive, bare shoulders, transparent clothing, text, signature, watermark, low quality, blurry, deformed, duplicate, two objects, multiple objects, background, circular shape, round, frame, border, monochrome, grayscale, muted colors, desaturated, dull colors, boring colors, flat colors"
+,
       "clip": [
         "4",
         1

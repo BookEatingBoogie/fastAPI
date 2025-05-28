@@ -1,5 +1,6 @@
 from typing import Dict
 import uuid
+import traceback
 from fastapi import Body, FastAPI
 
 from app.schemas.endingRequest import endingRequest
@@ -118,7 +119,7 @@ async def getIntro(introRequest: introRequest):
 
         # 도입부 삽화는 서버 0번으로 고정
         server_url = get_server_by_index(0)
-        result = generate_image_from_prompt(FILE_NAME, imgPrompt, server_url)
+        result = await generate_background_from_prompt(FILE_NAME, imgPrompt, server_url)
         print(result)
 
         RESPONSE_ID = responseId
@@ -206,7 +207,9 @@ async def getContent(contentRequest: contentRequest):
         try:
             result = await asyncio.wait_for(scene_tasks[contentRequest.choice], timeout=60)
         except Exception as e:
-            raise HTTPException(status_code=e.status_code, detail=f"scene {sceneIdx} 생성 실패: {e}")
+            traceback.print_exc()  # 💥 진짜 원인 콘솔에 찍기
+            raise HTTPException(status_code=500, detail=f"scene {sceneIdx} 생성 실패: {e}") 
+
         print(f"scene {sceneIdx} 생성 완료: {result}")
 
         STORY.append(result["story"])

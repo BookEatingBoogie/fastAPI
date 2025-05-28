@@ -15,13 +15,12 @@ def get_workflow():
     with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
-async def generate_background_from_prompt(prompt: str, server_index: int):
-    """서버 인덱스를 기반으로 분산하여 배경 이미지를 생성"""
+async def generate_background_from_prompt(file_name: str, prompt: str, server_url: str):
+    """배경 이미지를 생성 (file_name은 일관성을 위한 인자, 사용되지 않음)"""
     try:
         workflow = get_workflow()
-        server_url = get_server_by_index(server_index)  # ✅ 서버 인덱스를 통해 URL 선택
 
-        # 워크플로우 내 텍스트 프롬프트 삽입
+        # 텍스트 프롬프트 삽입
         for node in workflow.values():
             if node.get("class_type") == "CLIPTextEncode":
                 node["inputs"]["text"] = prompt

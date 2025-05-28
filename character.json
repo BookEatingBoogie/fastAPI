@@ -64,7 +64,8 @@
   },
   "7": {
     "inputs": {
-      "text": "Low-quality, blurry, distorted, unrealistic proportions, dull colors, out of focus, messy background, duplicate characters.",
+      "text": "nsfw, nude, naked, sexy, suggestive, bare shoulders, transparent clothing, text, signature, watermark, low quality, blurry, deformed, duplicate, two objects, multiple objects, background, circular shape, round, frame, border, monochrome, grayscale, muted colors, desaturated, dull colors, boring colors, flat colors"
+,
       "clip": [
         "4",
         1
