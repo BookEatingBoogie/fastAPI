@@ -145,7 +145,7 @@
     "inputs": {
       "preset": "FACEID PLUS V2",
       "lora_strength": 0.6,
-      "provider": "CPU",
+      "provider": "CUDA",
       "model": [
         "4",
         0

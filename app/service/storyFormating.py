@@ -7,7 +7,7 @@ from app.schemas.contentOutput import contentOutput
 from app.schemas.endingOutput import endingOutput
 from app.schemas.introOutput import introOutput
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.expanduser("C:/BookEating/model-obelisk-460705-i3-cb0d1bb7542d.json")
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.expanduser("/Users/leeseoyoung/Downloads/model-obelisk-460705-i3-cb0d1bb7542d.json")
 
 # 형태소 분석기 설정
 okt = Okt()
