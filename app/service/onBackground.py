@@ -16,20 +16,31 @@ from stablediffusion.comfyUI_servers import get_server_by_index
 
 sticker_url = []
 
+def clear_sticker_url():
+    global sticker_url
+    sticker_url = []
+
+def get_sticker_url():
+    global sticker_url
+    return sticker_url
+
 async def get_illustration_result(file_name, prompt, charLook, server_url):
     lower_prompt = prompt.lower()
 
     if "person" in lower_prompt:
-        refined_prompt = prompt + " " + charLook.lower()
+        # ✅ 맨 앞에 나오는 "person"만 제거 (대소문자 구분 없이)
+        if lower_prompt.startswith("person"):
+            prompt = prompt[len("person"):].lstrip()
+
+        refined_prompt = charLook.lower() + " " + prompt
         return generate_image_from_prompt(file_name, refined_prompt, server_url)  # ✅ await 제거
 
     elif "background" in lower_prompt:
-        return await generate_background_from_prompt(file_name, prompt, server_url)  # ✅ 여긴 비동기니까 await 유지
+        return await generate_background_from_prompt(prompt, server_url)  # ✅ 여긴 비동기니까 await 유지
 
     else:
-        refined_prompt = prompt + " " + charLook.lower()
+        refined_prompt = charLook.lower()  + " " + prompt
         return generate_image_from_prompt(file_name, refined_prompt, server_url)  # ✅ await 제거
-
 
 
 async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str, choice: str, charName: str, charLook: str, responseId: str, server_url: str):

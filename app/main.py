@@ -10,9 +10,10 @@ from app.schemas.introRequest import introRequest
 from app.schemas.stickerRequest import StickerRequest
 from app.service.getImgPromptService import *
 from app.service.getStoryService import *
-from app.service.onBackground import *
+from app.service.onBackground import call_sticker_generator, clear_sticker_url, generate_illust_high, get_sticker_url, getContentNow, getEndingNow, handle_generate_ending, handle_generate_scene
 from app.service.storyFormating import *
 from stablediffusion.illust_high import generate_image_high_from_prompt
+from stablediffusion.onlybackground import generate_background_from_prompt
 from stablediffusion.s3_uploader import *
 from stablediffusion.illust_success import *
 from stablediffusion.character_success import *
@@ -24,8 +25,6 @@ app = FastAPI()
 STORY = []
 # 생성된 삽화 프롬프트 저장
 ILLUST_PROMPT = []
-# 생성된 캐릭터 이미지 저장
-ILLUST_URL = []
 # 생성된 캐릭터 캐릭터 정보
 CHAR_LOOK = ""
 # 사용자 사진
@@ -90,10 +89,11 @@ tasks: Dict[str, Dict[int, Dict[str, asyncio.Task]]] = {}
 async def getIntro(introRequest: introRequest):
     loop = asyncio.get_running_loop()
 
-    global STORY, ILLUST_URL, CHAR_LOOK, FILE_NAME, RESPONSE_ID, ILLUST_PROMPT
+    global STORY, CHAR_LOOK, FILE_NAME, RESPONSE_ID, ILLUST_PROMPT
 
     STORY = []
-    ILLUST_URL = []
+    ILLUST_PROMPT = []
+    clear_sticker_url()
     CHAR_LOOK = ""
     FILE_NAME = ""
     RESPONSE_ID = ""
@@ -108,7 +108,7 @@ async def getIntro(introRequest: introRequest):
 
         # 스티커 생성 호출
         asyncio.create_task(call_sticker_generator(intro.options))
-        
+
         imgPrompt = createBackgroundImage(intro.intro)
 
         CHAR_LOOK = formatCharLook(introRequest.charLook, intro.charLook)
@@ -119,7 +119,7 @@ async def getIntro(introRequest: introRequest):
 
         # 도입부 삽화는 서버 0번으로 고정
         server_url = get_server_by_index(0)
-        result = await generate_background_from_prompt(FILE_NAME, imgPrompt, server_url)
+        result = await generate_background_from_prompt(imgPrompt, server_url)
         print(result)
 
         RESPONSE_ID = responseId
@@ -154,9 +154,6 @@ async def getIntro(introRequest: introRequest):
             s3_key=f"storybook/temp/{filename}"
         )
 
-        ILLUST_URL.append(s3_url)
-
-
         print(requestId)
 
         return {
@@ -175,7 +172,7 @@ async def getIntro(introRequest: introRequest):
 @app.post("/generate/content/")
 async def getContent(contentRequest: contentRequest):
 
-    global STORY, ILLUST_URL, CHAR_LOOK, FILE_NAME, RESPONSE_ID, ILLUST_PROMPT
+    global STORY, CHAR_LOOK, FILE_NAME, RESPONSE_ID, ILLUST_PROMPT
 
     requestId = contentRequest.requestId
     sceneIdx = contentRequest.page
@@ -214,7 +211,6 @@ async def getContent(contentRequest: contentRequest):
 
         STORY.append(result["story"])
         ILLUST_PROMPT.append(result["illust_prompt"])
-        ILLUST_URL.append(result["s3_url"])
 
         RESPONSE_ID = result["responseId"]
 
@@ -234,7 +230,6 @@ async def getContent(contentRequest: contentRequest):
 
         # 스티커 생성 호출
         asyncio.create_task(call_sticker_generator(result["choices"]))
-        
 
         return {
             "requestId": requestId,
@@ -250,7 +245,7 @@ async def getContent(contentRequest: contentRequest):
 @app.post("/generate/story/")
 async def getStory(endingRequest: endingRequest):
 
-    global STORY, ILLUST_URL, CHAR_LOOK, FILE_NAME, RESPONSE_ID, ILLUST_PROMPT
+    global STORY, CHAR_LOOK, FILE_NAME, RESPONSE_ID, ILLUST_PROMPT
     
     loop = asyncio.get_running_loop()
 
@@ -270,7 +265,6 @@ async def getStory(endingRequest: endingRequest):
     
         STORY.append(result["story"])
         ILLUST_PROMPT.append(result["illust_prompt"])
-        ILLUST_URL.append(result["s3_url"])
     
     # 동화 전체 정제 -> 삽화 재생성 기다려서 이미지 url과 함께 페이지별로 엮어서 json 파일 생성. -> 파일 이름은 storyId.json -> 파일 저장 위치는 s3.
     render_result, high_illusts = await asyncio.gather(
@@ -289,7 +283,6 @@ async def getStory(endingRequest: endingRequest):
     print("동화 S3 업로드 완료!")
 
     STORY = []
-    ILLUST_URL = []
     ILLUST_PROMPT = []
 
     return s3_url
@@ -297,7 +290,7 @@ async def getStory(endingRequest: endingRequest):
 
 @app.get("/stickers")
 def get_stickers():
-    return sticker_url
+    return get_sticker_url()
 
 
 @app.post("/test/")

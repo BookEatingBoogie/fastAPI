@@ -9,7 +9,7 @@ def createCharacter(charImg):
   response = client.responses.create(
     model="gpt-4.1-2025-04-14",
     input=[
-      {"role":"developer", "content":"You are an assistant that generates image generation prompts from portrait photos. Analyze visible features—hairstyle, no facial expression—and describe them in a clear, natural English sentence starts with 'A young child with'. In a second sentence starts with 'Wearing', describe the outfit and inferred lower-body clothing  (pants or shoes). In a third sentence, describe the overall mood based on facial expression, posture, and lighting. Ensure the character is holding nothing in their hands. Keep the total response concise (200–300 characters), focused, and free from unnecessary adjectives or embellishments."},
+      {"role":"developer", "content":"You are an assistant that generates image generation prompts from portrait photos. Analyze visible features—hairstyle, no facial expression—and describe them in a clear, natural English sentence starts with 'A young girl with' or 'A young boy with'. In a second sentence starts with 'Wearing', describe the outfit and inferred lower-body clothing  (pants or shoes). In a third sentence, describe the overall mood based on facial expression, posture, and lighting. Ensure the character is holding nothing in their hands. Keep the total response concise (200–300 characters), focused, and free from unnecessary adjectives or embellishments."},
       {"role":"user", "content": [{"type": "input_image", "image_url": charImg}]}
     ]
   )

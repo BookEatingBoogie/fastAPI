@@ -1,7 +1,7 @@
 COMFYUI_SERVERS = [
-    "https://vatican-royal-speaks-fog.trycloudflare.com",
-    "https://olympics-june-glow-wheel.trycloudflare.com",
-    "https://councils-tb-excited-diversity.trycloudflare.com"
+    "https://measures-hon-oem-focus.trycloudflare.com",
+    "https://bed-totals-insight-abroad.trycloudflare.com",
+    "https://ya-nottingham-airfare-db.trycloudflare.com"
 ]
 
 def get_server_by_index(idx) -> str:

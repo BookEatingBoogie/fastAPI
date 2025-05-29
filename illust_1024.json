@@ -3,8 +3,8 @@
     "inputs": {
       "seed": 608548260914332,
       "steps": 30,
-      "cfg": 6.5,
-      "sampler_name": "ddpm",
+      "cfg": 8.0,
+      "sampler_name": "dpmpp_2m",
       "scheduler": "karras",
       "denoise": 1,
       "model": [
@@ -41,8 +41,8 @@
   },
   "5": {
     "inputs": {
-      "width": 1024,
-      "height": 1024,
+      "width": 768,
+      "height": 768,
       "batch_size": 1
     },
     "class_type": "EmptyLatentImage",
@@ -117,7 +117,7 @@
   "18": {
     "inputs": {
       "weight": 1,
-      "weight_faceidv2": 2,
+      "weight_faceidv2": 0.8,
       "weight_type": "linear",
       "combine_embeds": "concat",
       "start_at": 0,
