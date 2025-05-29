@@ -75,10 +75,10 @@ async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str,
     }
 
 
-async def handle_generate_ending(request_id: str, file_name: str, choice: str, charName: str, charLook: str, server_url: str):
+async def handle_generate_ending(request_id: str, file_name: str, choice: str, charName: str, charLook: str, responseId: str, server_url: str):
     loop = asyncio.get_running_loop()
 
-    ending = await loop.run_in_executor(None, generateEnding, choice, charName)
+    ending = await loop.run_in_executor(None, generateEnding, choice, charName, responseId)
     print(f"엔딩 생성 완료: {ending.story}")
 
     prompt = await loop.run_in_executor(None, createStoryImage, ending.story)

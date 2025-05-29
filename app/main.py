@@ -217,7 +217,7 @@ async def getContent(contentRequest: contentRequest):
         tasks[requestId][sceneIdx+1] = {}
         for idx, choice in enumerate(result["choices"]):
             server_url = get_server_by_index(idx)  # ✅ 선택지 인덱스로 서버 분산
-            if sceneIdx == 5:
+            if sceneIdx+1 == 5:
                 t = asyncio.create_task(
                     handle_generate_ending(requestId, FILE_NAME, choice, contentRequest.charName, CHAR_LOOK, RESPONSE_ID, server_url)
                 )

@@ -6,7 +6,7 @@ from app.schemas.contentOutput import contentOutput
 from app.schemas.endingOutput import endingOutput
 from app.schemas.introOutput import introOutput
 from app.schemas.renderOutput import renderOutput
-from app.service.storyFormating import formatStory
+from app.service.storyFormating import exchange_to_easy_words_content, exchange_to_easy_words_ending, exchange_to_easy_words_intro, formatStory
 
 
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -39,14 +39,14 @@ def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
   storyPrompt = f"""Tell a story beginning in {introRequest.place}, inspired by {introRequest.genre}, 
   following a main character named {introRequest.charName}, allowing for unexpected developments.
 
-  Begin the intro with a storybook tone that evokes an “once upon a time” atmosphere, mentioning the place and character in a gentle, fairy-tale style. Then introduce the setting with sensory details (what can be seen, heard, felt, or smelled). 
+  Begin the intro with a storybook tone that evokes an “once upon a time” atmosphere (just mood not template), mentioning the place and character in a gentle, fairy-tale style. Then introduce the setting with sensory details (what can be seen, heard, felt, or smelled).
   If the genre is fantasy, sci-fi, or magical realism, briefly hint at the world's rules or atmosphere.
 
-  Then describe the character’s daily life or a curiosity that fits the setting. 
-  Write each sentence clearly and naturally, using simple child-friendly Korean. 
+  Then describe the character’s daily life or a curiosity that fits the setting.
+  Write each sentence clearly and naturally, using simple child-friendly Korean.
   Avoid compressing multiple ideas into one sentence—break into short, natural segments.
 
-  End the scene with the character noticing or discovering something surprising, mysterious, or story-advancing. 
+  End the scene with the character noticing or discovering something surprising, mysterious, or story-advancing.
   This final moment must be clearly related to the follow-up question.
 
   After the story, write a question in Korean that naturally continues from the final sentence. 
@@ -60,7 +60,7 @@ def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
 
   1. "intro" (Korean): 
   - A full Korean story intro (about 350 characters), ending in a moment that implies a next action or discovery. 
-  - Use polite, natural sentence endings like -요 / -었어요 / -ㅂ니다 / -지요.
+  - Use polite, natural sentence endings like -요 / -었어요 / -ㅂ니다.
   - Avoid repetition across stories.
 
   2. "question" (Korean): 
@@ -104,8 +104,10 @@ def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
     # 현재 응답 id 저장
     responseId = response.id
 
-    print(response.output_parsed)
-    return response.output_parsed, responseId
+    easy_story = exchange_to_easy_words_intro(response.output_parsed)
+
+    print(easy_story)
+    return easy_story, responseId
   
   except Exception as e:
     raise e
@@ -115,7 +117,7 @@ def generateIntro(introRequest): # storyStyle: 장소, 장르, 주인공 이름
 def generateContent(choice, charName, responseId): # select: 질문 선택지, charName: 주인공 이름
   
   # 요청 프롬프트
-  storyPrompt = f"""Continue the story of with {choice} chosen by the {charName} in the previous scene.
+  storyPrompt = f"""Continue the story of with "{choice}" chosen by the {charName} in the previous scene.
 
   Write the **middle scene** in Korean using short, child-friendly sentences.
 
@@ -125,13 +127,15 @@ def generateContent(choice, charName, responseId): # select: 질문 선택지, c
 
   Then write:
   1. "story" (Korean):
-  - A full Korean story follows the previous scene (about 350 characters), ending in a moment that implies a next action or discovery. 
-  - Use polite, natural sentence endings like -요 / -ㅂ니다 / -지요.
+  - A full Korean story follows the previous scene (about 350 characters), ending in a moment that implies a next action or discovery (no emotions at the ending sentence). 
+  - Use polite, natural sentence endings like -요 / -었어요 / -ㅂ니다.
   - Avoid repetition across stories.
 
   2. "question" (Korean): 
-  - Write a narrative-style question in child-friendly Korean that flows directly from the ending of the intro.
-  - Avoid template-style wording.
+  - Write a narrative-style question in child-friendly Korean that flows directly from the ending of the story.
+  - Avoid template-style wording —use short, natural sentences if needed.
+  - Focus on the object or decision or reaction (except character's emotions) , rather than shifting focus to its surroundings or earlier context.
+  - Do not reference any events or details that occurred before the last line. Focus only on what should happen next in the story’s timeline.
   - By default, ask question that can answer in concrete visual noun (e.g. animals, objects, natural things, magical items, character gear).
   - Only if the character needs to make **decision** or **reaction**, ask question about what to do that can return **3 verbs** in "-기" or "-하기" form instead
 
@@ -168,8 +172,10 @@ def generateContent(choice, charName, responseId): # select: 질문 선택지, c
     # 현재 응답 id 저장
     responseId = response.id
 
-    print(response.output_parsed)
-    return response.output_parsed, responseId
+    easy_story = exchange_to_easy_words_content(response.output_parsed)
+
+    print(easy_story)
+    return easy_story, responseId
   
   except Exception as e:
     raise e
@@ -189,7 +195,7 @@ def generateFinalQuestion(choice, charName, responseId): # select: 질문 선택
   Then write:
   1. "story" (Korean):
   - A full Korean story follows the previous scene (about 350 characters), ending in a moment that implies a next action or discovery (no emotions at the ending sentence). 
-  - Use polite, natural sentence endings like -요 / -었어요 / -ㅂ니다 / -지요.
+  - Use polite, natural sentence endings like -요 / -었어요 / -ㅂ니다.
   - Avoid repetition across stories.
   - Transition the narrative toward a pivotal decision point that also guides the story toward its conclusion: have the character reflect on past events, make a significant choice resolving the central conflict, and begin moving the story into its final phase.
 
@@ -233,8 +239,10 @@ def generateFinalQuestion(choice, charName, responseId): # select: 질문 선택
     # 현재 응답 id 저장
     responseId_new = response.id
 
-    print(response.output_parsed)
-    return response.output_parsed, responseId_new
+    easy_story = exchange_to_easy_words_content(response.output_parsed)
+
+    print(easy_story)
+    return easy_story, responseId_new
   
   except Exception as e:
     raise e
@@ -265,8 +273,10 @@ def generateEnding(choice, charName, responseId):
       top_p=0.8
     )
 
-    print(response.output_parsed)
-    return response.output_parsed
+    easy_story = exchange_to_easy_words_ending(response.output_parsed)
+
+    print(easy_story)
+    return easy_story
   
   except Exception as e:
     raise e
@@ -308,6 +318,7 @@ Do not include any extra explanations, notes, or formatting in the output — re
       top_p=0.8
     )
 
+    print(story)
     print(response.output_parsed)
 
     return response.output_parsed
