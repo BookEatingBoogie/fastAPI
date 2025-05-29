@@ -25,6 +25,7 @@ def get_sticker_url():
     return sticker_url
 
 async def get_illustration_result(file_name, prompt, charLook, server_url):
+    loop = asyncio.get_running_loop()
     lower_prompt = prompt.lower()
 
     if "person" in lower_prompt:
@@ -33,14 +34,14 @@ async def get_illustration_result(file_name, prompt, charLook, server_url):
             prompt = prompt[len("person"):].lstrip()
 
         refined_prompt = charLook.lower() + " " + prompt
-        return generate_image_from_prompt(file_name, refined_prompt, server_url)  # ✅ await 제거
+        return await loop.run_in_executor(None, generate_image_from_prompt, file_name, refined_prompt, server_url)
 
     elif "background" in lower_prompt:
-        return await generate_background_from_prompt(prompt, server_url)  # ✅ 여긴 비동기니까 await 유지
+        return await loop.run_in_executor(None, generate_background_from_prompt, prompt, server_url)
 
     else:
         refined_prompt = charLook.lower()  + " " + prompt
-        return generate_image_from_prompt(file_name, refined_prompt, server_url)  # ✅ await 제거
+        return await loop.run_in_executor(None, generate_image_from_prompt, file_name, refined_prompt, server_url)
 
 
 async def handle_generate_scene(request_id: str, scene_idx: int, file_name: str, choice: str, charName: str, charLook: str, responseId: str, server_url: str):

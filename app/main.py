@@ -289,7 +289,7 @@ async def getStory(endingRequest: endingRequest):
 
 
 @app.get("/stickers")
-def get_stickers():
+async def get_stickers():
     return get_sticker_url()
 
 

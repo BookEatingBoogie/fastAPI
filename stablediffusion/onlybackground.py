@@ -1,6 +1,6 @@
-import asyncio
 import os
 import json
+import time
 import requests
 from fastapi import HTTPException
 from stablediffusion.comfyUI_servers import get_server_by_index  # ✅ 서버 분산 로직 활용
@@ -15,7 +15,7 @@ def get_workflow():
     with open(WORKFLOW_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
-async def generate_background_from_prompt(prompt: str, server_url: str):
+def generate_background_from_prompt(prompt: str, server_url: str):
     """배경 이미지를 생성 (file_name은 일관성을 위한 인자, 사용되지 않음)"""
     try:
         workflow = get_workflow()
@@ -38,7 +38,7 @@ async def generate_background_from_prompt(prompt: str, server_url: str):
             outputs = result_json.get(prompt_id, {}).get("outputs", {}) or result_json.get("outputs", {})
             if outputs:
                 break
-            await asyncio.sleep(1)
+            time.sleep(1)
 
         if not outputs:
             raise Exception("출력 결과가 비어 있습니다.")

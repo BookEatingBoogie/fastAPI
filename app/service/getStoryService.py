@@ -289,21 +289,22 @@ async def generateStory(story):
 
   system_prompt = f"""You are responsible for refining an array of separated fairytale scenes into a smoothly connected story.
 
-Each element in the array is a scene written in Korean.  
-You must improve the flow, clarity, and tone consistency **without changing the order or count** of the scenes.  
-The input and output must remain in **array format**.
+  Each element in the array is a scene written in Korean.  
+  You must improve the flow, clarity, and tone consistency without changing the order or count of the scenes.  
+  The input and output must remain in array format.
 
-Your goal is to:
-- Fix incomplete or awkward sentences by ensuring proper grammar and natural structure  
-- Add missing logical or emotional transitions **within each scene** if needed  
-- Rephrase for a smooth, unified tone across the entire story  
-- Preserve the core meaning of each scene while improving readability and cohesion  
-- Ensure the overall story feels connected and emotionally engaging, with a clear buildup and resolution  
-- Do not add new events or change what is happening in the scene — only smooth and clarify it
+  Your goal is to:
+  - Fix incomplete or awkward sentences by ensuring proper grammar and natural structure  
+  - Add missing logical or emotional transitions within each scene if needed  
+  - Rephrase for a smooth, unified tone across the entire story  
+  - Preserve the core meaning of each scene while improving readability and cohesion  
+  - Ensure the overall story feels connected and emotionally engaging, with a clear buildup and resolution  
+  - Do not add new events or change what is happening in the scene — only smooth and clarify it
+  - Each scene must be written in natural, child-friendly Korean, limited to 400 characters or fewer. 
+  - The output array must contain exactly 6 elements; do not add or remove any scenes.
+  - Each element’s content must remain intact; do not split or move content between elements.
 
-Each scene must be written in **natural, child-friendly Korean**,  
-limited to **300 characters or fewer**.  
-Do not include any extra explanations, notes, or formatting in the output — return **only the final array of improved scenes**.
+  Do not include any extra explanations, notes, or formatting in the output — return only the final array of improved scenes.
 """
 
   try:
