@@ -256,23 +256,34 @@ async def getStory(endingRequest: endingRequest):
         server_url = get_server_by_index(0)  # ✅ 기본 서버로 처리
         result = await getEndingNow(endingRequest.choice, endingRequest.charName, RESPONSE_ID, FILE_NAME, CHAR_LOOK, server_url)
     else:
-        scene_tasks = tasks[requestId][sceneIdx][endingRequest.choice]
+        scene_tasks = tasks[requestId][sceneIdx]
 
+        if endingRequest.choice not in scene_tasks:
+            raise HTTPException(
+                status_code=400,
+                detail=f"선택한 '{endingRequest.choice}'는 존재하지 않습니다. 가능한 값: {list(scene_tasks.keys())}"
+            )
+
+        # 선택되지 않은 선택지에 대하여 실행 취소
+        for choice, task in list(scene_tasks.items()):
+            if choice != endingRequest.choice:
+                task.cancel()
+                del scene_tasks[choice]
+
+        # 선택된 선택지에 대하여 동화 생성 완료 대기
         try:
-            result = await asyncio.wait_for(scene_tasks, timeout=60)
+            result = await asyncio.wait_for(scene_tasks[endingRequest.choice], timeout=60)
         except Exception as e:
-            raise HTTPException(status_code=e.status_code, detail=f"scene {sceneIdx} 생성 실패: {e}")
+            traceback.print_exc()  # 💥 진짜 원인 콘솔에 찍기
+            raise HTTPException(status_code=500, detail=f"scene {sceneIdx} 생성 실패: {e}")
     
         STORY.append(result["story"])
         ILLUST_PROMPT.append(result["illust_prompt"])
     
     # 동화 전체 정제 -> 삽화 재생성 기다려서 이미지 url과 함께 페이지별로 엮어서 json 파일 생성. -> 파일 이름은 storyId.json -> 파일 저장 위치는 s3.
-    render_result, high_illusts = await asyncio.gather(
-        generateStory(STORY),
-        generate_illust_high(FILE_NAME, ILLUST_PROMPT, endingRequest.storyId)
-    )
+    high_illusts = await generate_illust_high(FILE_NAME, ILLUST_PROMPT, endingRequest.storyId)
 
-    formattedStory = formatStory(render_result.paragraphs, high_illusts)
+    formattedStory = formatStory(STORY, high_illusts)
 
     # 파일 이름은 storyId.json -> 파일 저장 위치는 s3.
     s3_url = upload_file(
@@ -286,7 +297,6 @@ async def getStory(endingRequest: endingRequest):
     ILLUST_PROMPT = []
 
     return s3_url
-
 
 @app.get("/stickers")
 def get_stickers():

@@ -65,7 +65,7 @@
   },
   "7": {
     "inputs": {
-      "text": "nsfw, nude, ((naked)), cleavage, ((sexy)), lingerie, bare shoulders, transparent clothing, suggestive, inappropriate, revealing clothes, bad hands, missing fingers, fused fingers, extra fingers, poorly drawn hands, poorly drawn fingers, extra limbs, duplicate, multiple people, two heads, two faces, cloned face, mutated hands, disfigured, low quality, blurry, deformed, bad anatomy, bad proportions, watermark, text, signature, error, out of frame",
+      "text": "nsfw, nude, ((naked)), cleavage, ((sexy)), lingerie, bare shoulders, transparent clothing, suggestive, inappropriate, revealing clothes, erotic, lewd, seductive, too much skin, underboob, hentai, bimbo, busty, low quality, bad hands, missing fingers, extra limbs, blurry, watermark, text, out of frame, mutated ",
      "clip": [
         "4",
         1
@@ -116,7 +116,7 @@
   },
   "18": {
     "inputs": {
-      "weight": 1,
+      "weight": 0.7,
       "weight_faceidv2": 0.8,
       "weight_type": "linear",
       "combine_embeds": "concat",
